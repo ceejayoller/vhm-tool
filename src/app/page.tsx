@@ -47,7 +47,7 @@ export default function HomePage() {
               <ProjectCard
                 key={project.id}
                 project={project}
-                onDelete={() => deleteProject(project.id)}
+                onDeleteAction={() => deleteProject(project.id)}
               />
             ))}
           </div>

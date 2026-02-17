@@ -49,15 +49,17 @@ export function AssetCard({ asset, onEdit }: AssetCardProps) {
   };
 
   return (
-    <div className="group relative rounded-md overflow-hidden border bg-muted">
+    <div className="group relative w-full aspect-square rounded-md overflow-hidden border bg-muted">
       {thumbnailUrl ? (
         <Image
           src={thumbnailUrl}
           alt={`Asset ${asset.childId}`}
-          className="w-full aspect-square object-cover"
+          fill
+          sizes="100vw"
+          className="object-cover"
         />
       ) : (
-        <div className="w-full aspect-square flex items-center justify-center">
+        <div className="w-full h-full flex items-center justify-center">
           <span className="text-xs text-muted-foreground">Loading...</span>
         </div>
       )}

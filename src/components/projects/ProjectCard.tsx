@@ -47,11 +47,13 @@ export function ProjectCard({ project, onDeleteAction }: ProjectCardProps) {
       </CardHeader>
       <CardContent className="pb-3">
         {thumbnailUrl ? (
-          <div className="aspect-video rounded-md overflow-hidden bg-muted">
+          <div className="aspect-video relative rounded-md overflow-hidden bg-muted">
             <Image
               src={thumbnailUrl}
               alt={project.name}
-              className="w-full h-full object-cover"
+              fill
+              sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+              className="object-cover"
             />
           </div>
         ) : (

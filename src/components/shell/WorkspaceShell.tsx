@@ -67,7 +67,7 @@ export function WorkspaceShell({ projectId }: WorkspaceShellProps) {
           {editingAssetId ? (
             <KonvaEditor
               assetId={editingAssetId}
-              onClose={() => setEditingAssetId(null)}
+              onCloseAction={() => setEditingAssetId(null)}
             />
           ) : (
             <LeafletMap projectId={projectId} />
@@ -76,7 +76,7 @@ export function WorkspaceShell({ projectId }: WorkspaceShellProps) {
         <ParentSidebar
           projectId={projectId}
           selectedParentId={selectedParentId}
-          onSelectParent={setSelectedParentId}
+          onSelectParentAction={setSelectedParentId}
           onEditAsset={setEditingAssetId}
         />
       </div>
