@@ -32,9 +32,20 @@ export class CanvasRenderer {
   private coordToPixel(lng: number, lat: number): { x: number; y: number } {
     const [[swLat, swLng], [neLat, neLng]] = this.bounds.imageBounds;
 
+    const maxMercatorLat = 85.05112878;
+    const clampLat = (value: number) =>
+      Math.max(-maxMercatorLat, Math.min(maxMercatorLat, value));
+    const toMercatorY = (degLat: number) => {
+      const rad = (clampLat(degLat) * Math.PI) / 180;
+      return Math.log(Math.tan(Math.PI / 4 + rad / 2));
+    };
+
     const x = ((lng - swLng) / (neLng - swLng)) * this.bounds.imageWidth;
     // Latitude is inverted: higher lat = lower y (top of image)
-    const y = ((neLat - lat) / (neLat - swLat)) * this.bounds.imageHeight;
+    const y =
+      ((toMercatorY(neLat) - toMercatorY(lat)) /
+        (toMercatorY(neLat) - toMercatorY(swLat))) *
+      this.bounds.imageHeight;
 
     return { x, y };
   }
