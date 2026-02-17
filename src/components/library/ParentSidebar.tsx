@@ -21,14 +21,14 @@ import { AssetGrid } from "./AssetGrid";
 interface ParentSidebarProps {
   projectId: string;
   selectedParentId: string | null;
-  onSelectParent: (id: string | null) => void;
+  onSelectParentAction: (id: string | null) => void;
   onEditAsset?: (assetId: string) => void;
 }
 
 export function ParentSidebar({
   projectId,
   selectedParentId,
-  onSelectParent,
+  onSelectParentAction,
   onEditAsset,
 }: ParentSidebarProps) {
   const parents = useParents(projectId);
@@ -75,10 +75,9 @@ export function ParentSidebar({
               key={parent.id}
               parent={parent}
               isSelected={selectedParentId === parent.id}
-              projectId={projectId}
               generating={generatingId === parent.id}
               onSelect={() =>
-                onSelectParent(
+                onSelectParentAction(
                   selectedParentId === parent.id ? null : parent.id,
                 )
               }
@@ -126,14 +125,12 @@ export function ParentSidebar({
 function ParentCard({
   parent,
   isSelected,
-  projectId,
   generating,
   onSelect,
   onGenerate,
 }: {
   parent: { id: string; name: string; color: string };
   isSelected: boolean;
-  projectId: string;
   generating: boolean;
   onSelect: () => void;
   onGenerate: () => void;

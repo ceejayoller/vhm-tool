@@ -15,10 +15,10 @@ import { useEditorStore } from "@/state/editorStore";
 import { generateId } from "@/utils/id";
 
 interface EditorToolbarProps {
-  onClose: () => void;
+  onCloseAction: () => void;
 }
 
-export function EditorToolbar({ onClose }: EditorToolbarProps) {
+export function EditorToolbar({ onCloseAction }: EditorToolbarProps) {
   const { addOverlay, deleteOverlay, selectedOverlayId, undo, redo } =
     useEditorStore();
 
@@ -110,7 +110,7 @@ export function EditorToolbar({ onClose }: EditorToolbarProps) {
 
       <div className="flex-1" />
 
-      <Button size="sm" variant="ghost" onClick={onClose} title="Close editor">
+      <Button size="sm" variant="ghost" onClick={onCloseAction} title="Close editor">
         <X className="h-4 w-4" />
       </Button>
     </div>

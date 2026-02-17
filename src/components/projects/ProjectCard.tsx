@@ -11,21 +11,22 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import Image from "next/image";
 import { Calendar, Image as ImageIcon, Trash2 } from "lucide-react";
 
 interface ProjectCardProps {
   project: Project;
-  onDelete: () => void;
+  onDeleteAction: () => void;
 }
 
-export function ProjectCard({ project, onDelete }: ProjectCardProps) {
+export function ProjectCard({ project, onDeleteAction }: ProjectCardProps) {
   const thumbnailUrl = useBlobUrl(project.overlayBlobId);
 
   const handleDelete = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (confirm(`Delete project "${project.name}"?`)) {
-      onDelete();
+      onDeleteAction();
     }
   };
 
@@ -47,7 +48,7 @@ export function ProjectCard({ project, onDelete }: ProjectCardProps) {
       <CardContent className="pb-3">
         {thumbnailUrl ? (
           <div className="aspect-video rounded-md overflow-hidden bg-muted">
-            <img
+            <Image
               src={thumbnailUrl}
               alt={project.name}
               className="w-full h-full object-cover"

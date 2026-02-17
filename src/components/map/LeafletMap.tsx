@@ -213,7 +213,7 @@ export default function LeafletMap({ projectId }: LeafletMapProps) {
     return () => {
       layer.remove();
     };
-  }, [mapReady, project?.childGeojson]);
+  }, [mapReady, project]);
 
   // Render parent polygons from DB
   useEffect(() => {

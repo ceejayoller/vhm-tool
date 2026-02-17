@@ -5,6 +5,8 @@ import type { Asset } from "@/db/db";
 import { db } from "@/db/db";
 import { Download, Edit2 } from "lucide-react";
 
+import Image from "next/image";
+
 interface AssetCardProps {
   asset: Asset;
   onEdit?: () => void;
@@ -49,7 +51,7 @@ export function AssetCard({ asset, onEdit }: AssetCardProps) {
   return (
     <div className="group relative rounded-md overflow-hidden border bg-muted">
       {thumbnailUrl ? (
-        <img
+        <Image
           src={thumbnailUrl}
           alt={`Asset ${asset.childId}`}
           className="w-full aspect-square object-cover"

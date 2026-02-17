@@ -9,10 +9,10 @@ import { EditorToolbar } from "./EditorToolbar";
 
 interface KonvaEditorProps {
   assetId: string;
-  onClose: () => void;
+  onCloseAction: () => void;
 }
 
-export default function KonvaEditor({ assetId, onClose }: KonvaEditorProps) {
+export default function KonvaEditor({ assetId, onCloseAction }: KonvaEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
@@ -104,7 +104,7 @@ export default function KonvaEditor({ assetId, onClose }: KonvaEditorProps) {
 
   return (
     <div className="flex flex-col h-full">
-      <EditorToolbar onClose={onClose} />
+      <EditorToolbar onCloseAction={onCloseAction} />
       <div ref={containerRef} className="flex-1 bg-muted overflow-hidden">
         <Stage
           ref={stageRef}
@@ -118,7 +118,6 @@ export default function KonvaEditor({ assetId, onClose }: KonvaEditorProps) {
             {overlays.map((overlay) => {
               const commonProps = {
                 id: overlay.id,
-                key: overlay.id,
                 draggable: true,
                 onClick: () => selectOverlay(overlay.id),
                 onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => {
@@ -132,6 +131,7 @@ export default function KonvaEditor({ assetId, onClose }: KonvaEditorProps) {
               if (overlay.type === "text") {
                 return (
                   <Text
+                    key={overlay.id}
                     {...commonProps}
                     x={overlay.x}
                     y={overlay.y}
@@ -147,6 +147,7 @@ export default function KonvaEditor({ assetId, onClose }: KonvaEditorProps) {
               if (overlay.type === "shape" && overlay.shapeType === "rect") {
                 return (
                   <Rect
+                    key={overlay.id}
                     {...commonProps}
                     x={overlay.x}
                     y={overlay.y}
@@ -163,6 +164,7 @@ export default function KonvaEditor({ assetId, onClose }: KonvaEditorProps) {
               if (overlay.type === "shape" && overlay.shapeType === "circle") {
                 return (
                   <Circle
+                    key={overlay.id}
                     {...commonProps}
                     x={overlay.x + overlay.width / 2}
                     y={overlay.y + overlay.height / 2}
