@@ -114,7 +114,11 @@ export function ParentSidebar({
         <div className="flex-1 border-t overflow-y-auto">
           <div className="p-3">
             <h3 className="font-medium text-sm mb-2">Generated Assets</h3>
-            <AssetGrid parentId={selectedParentId} onEditAsset={onEditAsset} />
+            <AssetGrid
+              projectId={projectId}
+              parentId={selectedParentId}
+              onEditAsset={onEditAsset}
+            />
           </div>
         </div>
       )}

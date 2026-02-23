@@ -10,7 +10,7 @@ interface EditorState {
 }
 
 interface EditorActions {
-  setSelectedAsset: (id: string | null) => void;
+  setSelectedAsset: (id: string | null, initialOverlays?: TemplateOverlay[]) => void;
   setOverlays: (overlays: TemplateOverlay[]) => void;
   addOverlay: (overlay: TemplateOverlay) => void;
   updateOverlay: (id: string, updates: Partial<TemplateOverlay>) => void;
@@ -45,12 +45,12 @@ export const useEditorStore = create<EditorState & EditorActions>(
   (set) => ({
     ...initialState,
 
-    setSelectedAsset: (id) =>
+    setSelectedAsset: (id, initialOverlays) =>
       set({
         selectedAssetId: id,
-        overlays: [],
+        overlays: initialOverlays ?? [],
         selectedOverlayId: null,
-        history: [[]],
+        history: [initialOverlays ?? []],
         historyIndex: 0,
       }),
 

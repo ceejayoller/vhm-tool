@@ -4,27 +4,43 @@ import { useEffect, useState } from "react";
 import type { Asset } from "@/db/db";
 import { db } from "@/db/db";
 import { Download, Edit2, Trash2 } from "lucide-react";
-
 import Image from "next/image";
+import { getDiagramConfig } from "@/types/diagram";
+import {
+  renderDiagramToBlob,
+  loadDiagramImages,
+} from "@/components/diagram/DiagramRenderer";
 
 interface AssetCardProps {
   asset: Asset;
+  parentName: string;
   onEdit?: () => void;
   onDelete?: () => void;
 }
 
-export function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
+export function AssetCard({ asset, parentName, onEdit, onDelete }: AssetCardProps) {
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
 
   useEffect(() => {
     let url: string | null = null;
 
     const loadThumb = async () => {
-      const blobId = asset.previewBlobId ?? asset.workingBlobId ?? asset.finalBlobId;
-      if (!blobId) return;
-      const record = await db.blobs.get(blobId);
-      if (!record) return;
-      url = URL.createObjectURL(record.blob);
+      const config = getDiagramConfig(asset, parentName);
+      const assetsById = new Map<string, Asset>();
+      if (config.slots[1]?.assetId) {
+        const a = await db.assets.get(config.slots[1].assetId);
+        if (a) assetsById.set(a.id, a);
+      }
+      assetsById.set(asset.id, asset);
+
+      const images = await loadDiagramImages(config, asset, assetsById);
+      const blob = await renderDiagramToBlob(config, asset.id, images);
+
+      for (const [, bm] of images) {
+        bm.close();
+      }
+
+      url = URL.createObjectURL(blob);
       setThumbnailUrl(url);
     };
 
@@ -33,15 +49,38 @@ export function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
     return () => {
       if (url) URL.revokeObjectURL(url);
     };
-  }, [asset.previewBlobId, asset.workingBlobId, asset.finalBlobId]);
+  }, [asset, parentName]);
 
   const handleDownload = async () => {
-    const blobId = asset.finalBlobId ?? asset.previewBlobId;
-    if (!blobId) return;
-    const record = await db.blobs.get(blobId);
-    if (!record) return;
+    if (asset.finalBlobId) {
+      const record = await db.blobs.get(asset.finalBlobId);
+      if (record) {
+        const url = URL.createObjectURL(record.blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `${asset.childId}.png`;
+        link.click();
+        URL.revokeObjectURL(url);
+        return;
+      }
+    }
 
-    const url = URL.createObjectURL(record.blob);
+    const config = getDiagramConfig(asset, parentName);
+    const assetsById = new Map<string, Asset>();
+    if (config.slots[1]?.assetId) {
+      const a = await db.assets.get(config.slots[1].assetId);
+      if (a) assetsById.set(a.id, a);
+    }
+    assetsById.set(asset.id, asset);
+
+    const images = await loadDiagramImages(config, asset, assetsById);
+    const blob = await renderDiagramToBlob(config, asset.id, images);
+
+    for (const [, bm] of images) {
+      bm.close();
+    }
+
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
     link.download = `${asset.childId}.png`;

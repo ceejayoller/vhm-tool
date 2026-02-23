@@ -1,6 +1,6 @@
 "use client";
 
-import { useAssets } from "@/db/hooks";
+import { useAssets, useParents } from "@/db/hooks";
 import { db } from "@/db/db";
 import { AssetCard } from "./AssetCard";
 import { ExportPanel } from "@/components/export/ExportPanel";
@@ -8,12 +8,20 @@ import { ImageIcon } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 interface AssetGridProps {
+  projectId: string;
   parentId: string;
   onEditAsset?: (assetId: string) => void;
 }
 
-export function AssetGrid({ parentId, onEditAsset }: AssetGridProps) {
+export function AssetGrid({
+  projectId,
+  parentId,
+  onEditAsset,
+}: AssetGridProps) {
   const assets = useAssets(parentId);
+  const parents = useParents(projectId);
+  const parent = parents?.find((p) => p.id === parentId);
+  const parentName = parent?.name ?? "Untitled";
 
   const handleDeleteAsset = async (assetId: string) => {
     const asset = await db.assets.get(assetId);
@@ -46,6 +54,7 @@ export function AssetGrid({ parentId, onEditAsset }: AssetGridProps) {
           <AssetCard
             key={asset.id}
             asset={asset}
+            parentName={parentName}
             onEdit={onEditAsset ? () => onEditAsset(asset.id) : undefined}
             onDelete={() => handleDeleteAsset(asset.id)}
           />
@@ -54,7 +63,7 @@ export function AssetGrid({ parentId, onEditAsset }: AssetGridProps) {
 
       <Separator />
 
-      <ExportPanel parentId={parentId} />
+      <ExportPanel projectId={projectId} parentId={parentId} />
     </div>
   );
 }
