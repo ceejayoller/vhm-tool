@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useMemo, useRef, useEffect } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import type { LatLngBounds } from "@/types/geo";
@@ -19,18 +20,18 @@ export function ImageUpload({
   onImageSelectAction,
   onBoundsChangeAction,
 }: ImageUploadProps) {
-  const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (!file) {
-      setPreview(null);
-      return;
-    }
-    const url = URL.createObjectURL(file);
-    setPreview(url);
-    return () => URL.revokeObjectURL(url);
+  const preview = useMemo(() => {
+    if (!file) return null;
+    return URL.createObjectURL(file);
   }, [file]);
+
+  useEffect(() => {
+    return () => {
+      if (preview) URL.revokeObjectURL(preview);
+    };
+  }, [preview]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
@@ -38,7 +39,7 @@ export function ImageUpload({
     onImageSelectAction(selected);
 
     const url = URL.createObjectURL(selected);
-    const img = new Image();
+    const img = new globalThis.Image();
     img.onload = () => {
       onBoundsChangeAction(computeImageBounds(img.width, img.height));
       URL.revokeObjectURL(url);
@@ -73,10 +74,13 @@ export function ImageUpload({
             </button>
           ) : (
             <div className="relative">
-              <img
+              <Image
                 src={preview}
                 alt="Preview"
                 className="w-full max-h-96 object-contain rounded-lg border"
+                width={800}
+                height={600}
+                unoptimized
               />
               <Button
                 variant="destructive"

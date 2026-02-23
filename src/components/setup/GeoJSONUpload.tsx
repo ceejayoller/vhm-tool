@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import type { ChildFeatureCollection } from "@/types/geo";
-import { Upload, X, FileJson, AlertCircle } from "lucide-react";
+import { X, FileJson, AlertCircle } from "lucide-react";
 
 interface GeoJSONUploadProps {
   geojson: ChildFeatureCollection | null;
