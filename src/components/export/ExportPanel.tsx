@@ -4,15 +4,25 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Download } from "lucide-react";
-import { useAssets } from "@/db/hooks";
+import { useAssets, useParents } from "@/db/hooks";
 import { db } from "@/db/db";
+import type { Asset } from "@/db/db";
+import { getDiagramConfig } from "@/types/diagram";
+import {
+  renderDiagramToBlob,
+  loadDiagramImages,
+} from "@/components/diagram/DiagramRenderer";
 
 interface ExportPanelProps {
+  projectId: string;
   parentId: string;
 }
 
-export function ExportPanel({ parentId }: ExportPanelProps) {
+export function ExportPanel({ projectId, parentId }: ExportPanelProps) {
   const assets = useAssets(parentId);
+  const parents = useParents(projectId);
+  const parent = parents?.find((p) => p.id === parentId);
+  const parentName = parent?.name ?? "Untitled";
   const [exporting, setExporting] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
 
@@ -25,23 +35,42 @@ export function ExportPanel({ parentId }: ExportPanelProps) {
     try {
       for (let i = 0; i < assets.length; i++) {
         const asset = assets[i];
-        const blobId =
-          asset.finalBlobId ?? asset.workingBlobId ?? asset.previewBlobId;
-        if (!blobId) continue;
 
-        const record = await db.blobs.get(blobId);
-        if (!record) continue;
+        if (asset.finalBlobId) {
+          const record = await db.blobs.get(asset.finalBlobId);
+          if (record) {
+            const url = URL.createObjectURL(record.blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `${asset.childId}.png`;
+            link.click();
+            URL.revokeObjectURL(url);
+          }
+        } else {
+          const config = getDiagramConfig(asset, parentName);
+          const assetsById = new Map<string, Asset>();
+          if (config.slots[1]?.assetId) {
+            const a = await db.assets.get(config.slots[1].assetId);
+            if (a) assetsById.set(a.id, a);
+          }
+          assetsById.set(asset.id, asset);
 
-        const url = URL.createObjectURL(record.blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `${asset.childId}.png`;
-        link.click();
-        URL.revokeObjectURL(url);
+          const images = await loadDiagramImages(config, asset, assetsById);
+          const blob = await renderDiagramToBlob(config, asset.id, images);
+
+          for (const [, bm] of images) {
+            bm.close();
+          }
+
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = `${asset.childId}.png`;
+          link.click();
+          URL.revokeObjectURL(url);
+        }
 
         setProgress({ current: i + 1, total: assets.length });
-
-        // Small delay to prevent browser from blocking downloads
         await new Promise((r) => setTimeout(r, 150));
       }
     } catch (error) {
