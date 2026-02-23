@@ -54,33 +54,27 @@ export async function generateAssetsForParent(
   const renderer = new CanvasRenderer(imageBitmap, project.overlayBounds);
 
   try {
-    // Find child polygons that intersect with the parent
+    // Find child polygons fully contained within the parent
     const childFeatures = project.childGeojson?.features ?? [];
     const parentPolygon = turf.polygon(parent.geometry.coordinates);
 
-    const intersecting = childFeatures.filter((child) => {
+    const contained = childFeatures.filter((child) => {
       try {
         if (child.geometry.type === "Polygon") {
           const childPoly = turf.polygon(child.geometry.coordinates);
-          return turf.booleanIntersects(parentPolygon, childPoly);
+          return turf.booleanWithin(childPoly, parentPolygon);
         }
         if (child.geometry.type === "MultiPolygon") {
           const childMulti = turf.multiPolygon(child.geometry.coordinates);
-          return turf.booleanIntersects(parentPolygon, childMulti);
+          return turf.booleanWithin(childMulti, parentPolygon);
         }
         return false;
       } catch {
-        // Fallback: check if centroid is inside parent
-        try {
-          const centroid = turf.centroid(child);
-          return turf.booleanPointInPolygon(centroid, parentPolygon);
-        } catch {
-          return false;
-        }
+        return false;
       }
     });
 
-    const total = intersecting.length;
+    const total = contained.length;
     report({ phase: "rendering", current: 0, total });
 
     if (total === 0) {
@@ -101,8 +95,8 @@ export async function generateAssetsForParent(
     await db.assets.where("parentId").equals(parentId).delete();
 
     // Generate assets
-    for (let i = 0; i < intersecting.length; i++) {
-      const child = intersecting[i];
+    for (let i = 0; i < contained.length; i++) {
+      const child = contained[i];
       const childId = String(
         child.id ?? child.properties?.id ?? `child_${i}`,
       );
