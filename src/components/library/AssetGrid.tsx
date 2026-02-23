@@ -1,6 +1,7 @@
 "use client";
 
 import { useAssets } from "@/db/hooks";
+import { db } from "@/db/db";
 import { AssetCard } from "./AssetCard";
 import { ExportPanel } from "@/components/export/ExportPanel";
 import { ImageIcon } from "lucide-react";
@@ -13,6 +14,18 @@ interface AssetGridProps {
 
 export function AssetGrid({ parentId, onEditAsset }: AssetGridProps) {
   const assets = useAssets(parentId);
+
+  const handleDeleteAsset = async (assetId: string) => {
+    const asset = await db.assets.get(assetId);
+    if (!asset) return;
+
+    await db.transaction("rw", db.assets, db.blobs, async () => {
+      if (asset.previewBlobId) await db.blobs.delete(asset.previewBlobId);
+      if (asset.workingBlobId) await db.blobs.delete(asset.workingBlobId);
+      if (asset.finalBlobId) await db.blobs.delete(asset.finalBlobId);
+      await db.assets.delete(assetId);
+    });
+  };
 
   if (!assets || assets.length === 0) {
     return (
@@ -34,6 +47,7 @@ export function AssetGrid({ parentId, onEditAsset }: AssetGridProps) {
             key={asset.id}
             asset={asset}
             onEdit={onEditAsset ? () => onEditAsset(asset.id) : undefined}
+            onDelete={() => handleDeleteAsset(asset.id)}
           />
         ))}
       </div>

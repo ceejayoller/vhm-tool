@@ -3,16 +3,17 @@
 import { useEffect, useState } from "react";
 import type { Asset } from "@/db/db";
 import { db } from "@/db/db";
-import { Download, Edit2 } from "lucide-react";
+import { Download, Edit2, Trash2 } from "lucide-react";
 
 import Image from "next/image";
 
 interface AssetCardProps {
   asset: Asset;
   onEdit?: () => void;
+  onDelete?: () => void;
 }
 
-export function AssetCard({ asset, onEdit }: AssetCardProps) {
+export function AssetCard({ asset, onEdit, onDelete }: AssetCardProps) {
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -82,6 +83,15 @@ export function AssetCard({ asset, onEdit }: AssetCardProps) {
         >
           <Download className="h-4 w-4 text-white" />
         </button>
+        {onDelete && (
+          <button
+            onClick={onDelete}
+            className="p-1.5 rounded-md bg-red-500/60 hover:bg-red-500/80 transition-colors"
+            title="Delete"
+          >
+            <Trash2 className="h-4 w-4 text-white" />
+          </button>
+        )}
       </div>
 
       {/* Label */}
