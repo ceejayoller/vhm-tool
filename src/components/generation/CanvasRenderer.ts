@@ -122,10 +122,10 @@ export class CanvasRenderer {
     },
   ): Promise<Blob> {
     const {
-      childStrokeColor = "#22c55e",
-      childStrokeWidth = 3,
-      childFillColor = "#22c55e",
-      childFillOpacity = 0.15,
+      childStrokeColor = "#ef4444",
+      childStrokeWidth = 10,
+      childFillColor = "#ef4444",
+      childFillOpacity = 0,
       padding = 20,
     } = options ?? {};
 
@@ -153,12 +153,14 @@ export class CanvasRenderer {
     // Draw base image
     ctx.drawImage(this.imageBitmap, 0, 0);
 
-    // Draw child polygon fill
-    this.tracePath(ctx, childPixels);
-    ctx.fillStyle = childFillColor;
-    ctx.globalAlpha = childFillOpacity;
-    ctx.fill();
-    ctx.globalAlpha = 1;
+    // Draw child polygon fill (optional)
+    if (childFillOpacity > 0) {
+      this.tracePath(ctx, childPixels);
+      ctx.fillStyle = childFillColor;
+      ctx.globalAlpha = childFillOpacity;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
 
     // Draw child polygon stroke
     this.tracePath(ctx, childPixels);
