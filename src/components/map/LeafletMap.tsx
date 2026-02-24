@@ -195,7 +195,7 @@ export default function LeafletMap({ projectId }: LeafletMapProps) {
       style: () => ({
         color: "#22c55e",
         weight: 2,
-        fillOpacity: 0.15,
+        fillOpacity: 0.08,
         fillColor: "#22c55e",
       }),
       onEachFeature: (feature, featureLayer) => {
