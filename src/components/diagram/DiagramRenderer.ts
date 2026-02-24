@@ -2,8 +2,14 @@ import { db } from "@/db/db";
 import type { Asset } from "@/db/db";
 import type { DiagramConfig } from "@/types/diagram";
 import { computeLayout, getLabelFontSize } from "./DiagramLayoutEngine";
-
-const CANVAS_SIZE = 360;
+import {
+  CANVAS_SIZE,
+  TITLE_FONT_SIZE,
+  TITLE_TEXT_OFFSET_X,
+  TITLE_TEXT_OFFSET_Y,
+  SEPARATOR_LINE_WIDTH,
+  SLOT_BORDER_WIDTH,
+} from "@/config/diagramConfig";
 
 /**
  * Build a map of assetId -> ImageBitmap for all slots in the config.
@@ -53,9 +59,13 @@ export async function renderDiagramToBlob(
   config: DiagramConfig,
   currentAssetId: string,
   images: Map<string, ImageBitmap>,
+  options?: { size?: number },
 ): Promise<Blob> {
-  const canvas = new OffscreenCanvas(CANVAS_SIZE, CANVAS_SIZE);
+  const targetSize = options?.size ?? CANVAS_SIZE;
+  const scale = targetSize / CANVAS_SIZE;
+  const canvas = new OffscreenCanvas(targetSize, targetSize);
   const ctx = canvas.getContext("2d")!;
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
 
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
@@ -66,13 +76,17 @@ export async function renderDiagramToBlob(
   );
 
   ctx.fillStyle = "#000000";
-  ctx.font = "bold 14px system-ui, sans-serif";
+  ctx.font = `bold ${TITLE_FONT_SIZE}px system-ui, sans-serif`;
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
-  ctx.fillText(config.title, titleRect.x + 4, titleRect.y + 6);
+  ctx.fillText(
+    config.title,
+    titleRect.x + TITLE_TEXT_OFFSET_X,
+    titleRect.y + TITLE_TEXT_OFFSET_Y,
+  );
 
   ctx.strokeStyle = "#e5e7eb";
-  ctx.lineWidth = 1;
+  ctx.lineWidth = SEPARATOR_LINE_WIDTH;
   ctx.beginPath();
   ctx.moveTo(0, titleRect.height);
   ctx.lineTo(CANVAS_SIZE, titleRect.height);
@@ -104,7 +118,7 @@ export async function renderDiagramToBlob(
       ctx.drawImage(img, drawX, drawY, drawW, drawH);
 
       ctx.strokeStyle = "#d1d5db";
-      ctx.lineWidth = 1;
+      ctx.lineWidth = SLOT_BORDER_WIDTH;
       ctx.strokeRect(
         layout.slotRect.x,
         layout.slotRect.y,
@@ -120,7 +134,7 @@ export async function renderDiagramToBlob(
         layout.slotRect.height,
       );
       ctx.strokeStyle = "#d1d5db";
-      ctx.lineWidth = 1;
+      ctx.lineWidth = SLOT_BORDER_WIDTH;
       ctx.strokeRect(
         layout.slotRect.x,
         layout.slotRect.y,
@@ -148,7 +162,13 @@ export async function renderDiagramToUrl(
   config: DiagramConfig,
   currentAssetId: string,
   images: Map<string, ImageBitmap>,
+  options?: { size?: number },
 ): Promise<string> {
-  const blob = await renderDiagramToBlob(config, currentAssetId, images);
+  const blob = await renderDiagramToBlob(
+    config,
+    currentAssetId,
+    images,
+    options,
+  );
   return URL.createObjectURL(blob);
 }

@@ -30,13 +30,16 @@ import {
 } from "@/components/diagram/DiagramRenderer";
 import { ScreenshotPickerModal } from "@/components/diagram/ScreenshotPickerModal";
 import type { TemplateOverlay } from "@/types/template";
+import {
+  CANVAS_SIZE,
+  LEGACY_CANVAS_SIZE,
+} from "@/config/diagramConfig";
+import { scaleOverlays } from "@/utils/overlays";
 
 interface KonvaEditorProps {
   assetId: string;
   onCloseAction: () => void;
 }
-
-const CANVAS_SIZE = 360;
 
 export default function KonvaEditor({
   assetId,
@@ -46,7 +49,10 @@ export default function KonvaEditor({
   const stageRef = useRef<Konva.Stage>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
   const [baseImage, setBaseImage] = useState<HTMLImageElement | null>(null);
-  const [stageSize, setStageSize] = useState({ width: 360, height: 360 });
+  const [stageSize, setStageSize] = useState({
+    width: CANVAS_SIZE,
+    height: CANVAS_SIZE,
+  });
   const [diagramConfig, setDiagramConfig] = useState<DiagramConfig | null>(null);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -112,7 +118,13 @@ export default function KonvaEditor({
           (o): o is TemplateOverlay =>
             o && typeof o === "object" && "id" in o && "type" in o,
         ) ?? [];
-      setSelectedAsset(assetId, initialOverlays);
+      const storedVersion =
+        typeof (asset.editState as Record<string, unknown> | undefined)?.overlayCoordVersion === "number"
+          ? (asset.editState as Record<string, unknown>).overlayCoordVersion as number
+          : LEGACY_CANVAS_SIZE;
+      const scale = storedVersion === CANVAS_SIZE ? 1 : CANVAS_SIZE / storedVersion;
+      const scaledOverlays = scaleOverlays(initialOverlays, scale);
+      setSelectedAsset(assetId, scaledOverlays);
 
       await renderBaseImage(config);
     };
@@ -270,6 +282,7 @@ export default function KonvaEditor({
         const finalBlobId = await storeBlob(finalBlob, "final", "image/png");
         const editState = buildEditStateWithDiagram(asset.editState, diagramConfig);
         (editState as Record<string, unknown>).overlays = overlays;
+        (editState as Record<string, unknown>).overlayCoordVersion = CANVAS_SIZE;
         await updateAsset(assetId, {
           finalBlobId,
           editState,
@@ -279,6 +292,7 @@ export default function KonvaEditor({
         const finalBlobId = await storeBlob(baseBlob, "final", "image/png");
         const editState = buildEditStateWithDiagram(asset.editState, diagramConfig);
         (editState as Record<string, unknown>).overlays = overlays;
+        (editState as Record<string, unknown>).overlayCoordVersion = CANVAS_SIZE;
         await updateAsset(assetId, {
           finalBlobId,
           editState,
@@ -300,6 +314,7 @@ export default function KonvaEditor({
     if (asset) {
       const editState = buildEditStateWithDiagram(asset.editState, diagramConfig);
       (editState as Record<string, unknown>).overlays = overlays;
+      (editState as Record<string, unknown>).overlayCoordVersion = CANVAS_SIZE;
       await updateAsset(assetId, { editState });
     }
 

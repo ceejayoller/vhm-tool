@@ -10,6 +10,7 @@ import {
   renderDiagramToBlob,
   loadDiagramImages,
 } from "@/components/diagram/DiagramRenderer";
+import { THUMBNAIL_CANVAS_SIZE } from "@/config/diagramConfig";
 
 interface AssetCardProps {
   asset: Asset;
@@ -34,7 +35,9 @@ export function AssetCard({ asset, parentName, onEdit, onDelete }: AssetCardProp
       assetsById.set(asset.id, asset);
 
       const images = await loadDiagramImages(config, asset, assetsById);
-      const blob = await renderDiagramToBlob(config, asset.id, images);
+      const blob = await renderDiagramToBlob(config, asset.id, images, {
+        size: THUMBNAIL_CANVAS_SIZE,
+      });
 
       for (const [, bm] of images) {
         bm.close();

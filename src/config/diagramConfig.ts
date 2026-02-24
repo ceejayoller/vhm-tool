@@ -1,0 +1,17 @@
+export const LEGACY_CANVAS_SIZE = 360;
+export const CANVAS_SIZE = 1080;
+export const SCALE_FACTOR = CANVAS_SIZE / LEGACY_CANVAS_SIZE;
+
+export const THUMBNAIL_CANVAS_SIZE = 360;
+
+// Layout
+export const TITLE_HEIGHT = 28 * SCALE_FACTOR;
+export const CONTENT_PADDING = 6 * SCALE_FACTOR;
+export const SLOT_GAP = 6 * SCALE_FACTOR;
+export const LABEL_MARGIN = 14 * SCALE_FACTOR;
+export const LABEL_FONT_SIZE = 10 * SCALE_FACTOR;
+export const TITLE_FONT_SIZE = 14 * SCALE_FACTOR;
+export const SEPARATOR_LINE_WIDTH = 1 * SCALE_FACTOR;
+export const SLOT_BORDER_WIDTH = 1 * SCALE_FACTOR;
+export const TITLE_TEXT_OFFSET_X = 4 * SCALE_FACTOR;
+export const TITLE_TEXT_OFFSET_Y = 6 * SCALE_FACTOR;

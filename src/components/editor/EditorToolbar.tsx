@@ -19,6 +19,7 @@ import { useEditorStore } from "@/state/editorStore";
 import { generateId } from "@/utils/id";
 import { ViewTypeToggle } from "@/components/diagram/ViewTypeToggle";
 import type { DiagramConfig, DiagramTemplateType, DiagramViewType } from "@/types/diagram";
+import { SCALE_FACTOR } from "@/config/diagramConfig";
 
 interface EditorToolbarProps {
   onCloseAction: () => void;
@@ -42,10 +43,10 @@ export function EditorToolbar({
     addOverlay({
       type: "text",
       id: generateId("text"),
-      x: 50,
-      y: 50,
+      x: 50 * SCALE_FACTOR,
+      y: 50 * SCALE_FACTOR,
       text: "New Text",
-      fontSize: 24,
+      fontSize: 24 * SCALE_FACTOR,
       fontFamily: "Arial",
       fill: "#000000",
       rotation: 0,
@@ -56,14 +57,14 @@ export function EditorToolbar({
     addOverlay({
       type: "shape",
       id: generateId("shape"),
-      x: 50,
-      y: 50,
-      width: 100,
-      height: 80,
+      x: 50 * SCALE_FACTOR,
+      y: 50 * SCALE_FACTOR,
+      width: 100 * SCALE_FACTOR,
+      height: 80 * SCALE_FACTOR,
       shapeType: "rect",
       fill: "rgba(59, 130, 246, 0.3)",
       stroke: "#3b82f6",
-      strokeWidth: 2,
+      strokeWidth: 2 * SCALE_FACTOR,
       rotation: 0,
     });
   };
@@ -72,14 +73,14 @@ export function EditorToolbar({
     addOverlay({
       type: "shape",
       id: generateId("shape"),
-      x: 100,
-      y: 100,
-      width: 80,
-      height: 80,
+      x: 100 * SCALE_FACTOR,
+      y: 100 * SCALE_FACTOR,
+      width: 80 * SCALE_FACTOR,
+      height: 80 * SCALE_FACTOR,
       shapeType: "circle",
       fill: "rgba(34, 197, 94, 0.3)",
       stroke: "#22c55e",
-      strokeWidth: 2,
+      strokeWidth: 2 * SCALE_FACTOR,
       rotation: 0,
     });
   };

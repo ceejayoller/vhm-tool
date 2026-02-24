@@ -3,13 +3,14 @@ import type {
   DiagramViewType,
   DiagramSlot,
 } from "@/types/diagram";
-
-const CANVAS_SIZE = 360;
-const TITLE_HEIGHT = 28;
-const CONTENT_PADDING = 6;
-const SLOT_GAP = 6;
-const LABEL_MARGIN = 14;
-const LABEL_FONT_SIZE = 10;
+import {
+  CANVAS_SIZE,
+  TITLE_HEIGHT,
+  CONTENT_PADDING,
+  SLOT_GAP,
+  LABEL_MARGIN,
+  LABEL_FONT_SIZE,
+} from "@/config/diagramConfig";
 
 export interface LabelSpec {
   text: string;
