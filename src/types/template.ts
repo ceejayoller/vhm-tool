@@ -42,4 +42,5 @@ export interface TemplateSpec {
     type: string;
     props: Record<string, unknown>;
   }>;
+  coordVersion?: number;
 }

@@ -112,10 +112,9 @@ export async function generateAssetsForParent(
         childGeom = child.geometry as Polygon;
       }
 
-      const previewBlob = await renderer.renderThumbnail(
+      const previewBlob = await renderer.renderChildAsset(
         parent.geometry,
         childGeom,
-        300,
       );
 
       await createAsset({

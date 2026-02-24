@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/card";
 import { Save, Trash2 } from "lucide-react";
 import { useEditorStore } from "@/state/editorStore";
+import { CANVAS_SIZE, LEGACY_CANVAS_SIZE } from "@/config/diagramConfig";
+import { scaleOverlays } from "@/utils/overlays";
 
 export function TemplatePanel() {
   const templates = useTemplates();
@@ -29,6 +31,7 @@ export function TemplatePanel() {
           type: o.type,
           props: { ...o } as unknown as Record<string, unknown>,
         })),
+        coordVersion: CANVAS_SIZE,
       },
     });
 
@@ -43,7 +46,9 @@ export function TemplatePanel() {
     const loaded = template.templateSpec.overlays.map(
       (o) => o.props as unknown as (typeof overlays)[number],
     );
-    setOverlays(loaded);
+    const coordVersion = template.templateSpec.coordVersion ?? LEGACY_CANVAS_SIZE;
+    const scale = coordVersion === CANVAS_SIZE ? 1 : CANVAS_SIZE / coordVersion;
+    setOverlays(scaleOverlays(loaded, scale));
   };
 
   const handleDeleteTemplate = async (
