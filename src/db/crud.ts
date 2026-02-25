@@ -97,12 +97,19 @@ export async function createParent(data: {
   geometry: Polygon;
   color: string;
 }): Promise<Parent> {
+  const existing = await db.parents
+    .where("projectId")
+    .equals(data.projectId)
+    .sortBy("sortOrder");
+  const nextSortOrder =
+    existing.length > 0 ? existing[existing.length - 1].sortOrder + 1 : 0;
   const parent: Parent = {
     id: generateId("parent"),
     projectId: data.projectId,
     name: data.name,
     geometry: data.geometry,
     color: data.color,
+    sortOrder: nextSortOrder,
     createdAt: Date.now(),
   };
   await db.parents.add(parent);
@@ -133,8 +140,22 @@ export async function createAsset(data: {
   childId: string;
   childGeometry: Polygon | MultiPolygon;
   previewBlob: Blob;
+  sortOrder?: number;
 }): Promise<Asset> {
   const previewBlobId = await storeBlob(data.previewBlob, "preview", "image/png");
+  let sortOrder: number;
+  if (typeof data.sortOrder === "number") {
+    sortOrder = data.sortOrder;
+  } else {
+    const existingAssets = await db.assets
+      .where("parentId")
+      .equals(data.parentId)
+      .sortBy("sortOrder");
+    sortOrder =
+      existingAssets.length > 0
+        ? existingAssets[existingAssets.length - 1].sortOrder + 1
+        : 0;
+  }
 
   const asset: Asset = {
     id: `${data.parentId}__${data.childId}`,
@@ -144,6 +165,7 @@ export async function createAsset(data: {
     childGeometry: data.childGeometry,
     previewBlobId,
     status: "generated",
+    sortOrder,
     updatedAt: Date.now(),
   };
 
@@ -156,6 +178,62 @@ export async function updateAsset(
   updates: Partial<Omit<Asset, "id" | "projectId" | "parentId" | "childId">>,
 ): Promise<void> {
   await db.assets.update(id, { ...updates, updatedAt: Date.now() });
+}
+
+export async function swapParentSortOrder(
+  parentId: string,
+  otherParentId: string,
+): Promise<void> {
+  await db.transaction("rw", db.parents, async () => {
+    const [parent, otherParent] = await Promise.all([
+      db.parents.get(parentId),
+      db.parents.get(otherParentId),
+    ]);
+    if (!parent || !otherParent) return;
+    await Promise.all([
+      db.parents.update(parentId, { sortOrder: otherParent.sortOrder }),
+      db.parents.update(otherParentId, { sortOrder: parent.sortOrder }),
+    ]);
+  });
+}
+
+export async function swapAssetSortOrder(
+  assetId: string,
+  otherAssetId: string,
+): Promise<void> {
+  await db.transaction("rw", db.assets, async () => {
+    const [asset, otherAsset] = await Promise.all([
+      db.assets.get(assetId),
+      db.assets.get(otherAssetId),
+    ]);
+    if (!asset || !otherAsset) return;
+    await Promise.all([
+      db.assets.update(assetId, { sortOrder: otherAsset.sortOrder }),
+      db.assets.update(otherAssetId, { sortOrder: asset.sortOrder }),
+    ]);
+  });
+}
+
+export async function reorderParents(
+  projectId: string,
+  orderedIds: string[],
+): Promise<void> {
+  await db.transaction("rw", db.parents, async () => {
+    for (const [index, id] of orderedIds.entries()) {
+      await db.parents.update(id, { sortOrder: index });
+    }
+  });
+}
+
+export async function reorderAssets(
+  parentId: string,
+  orderedIds: string[],
+): Promise<void> {
+  await db.transaction("rw", db.assets, async () => {
+    for (const [index, id] of orderedIds.entries()) {
+      await db.assets.update(id, { sortOrder: index });
+    }
+  });
 }
 
 // ── Template operations ──

@@ -18,7 +18,7 @@ export function useParents(projectId: string | undefined): Parent[] | undefined 
   return useLiveQuery(
     () =>
       projectId
-        ? db.parents.where("projectId").equals(projectId).toArray()
+        ? db.parents.where("projectId").equals(projectId).sortBy("sortOrder")
         : [],
     [projectId],
   );
@@ -28,7 +28,7 @@ export function useAssets(parentId: string | undefined): Asset[] | undefined {
   return useLiveQuery(
     () =>
       parentId
-        ? db.assets.where("parentId").equals(parentId).toArray()
+        ? db.assets.where("parentId").equals(parentId).sortBy("sortOrder")
         : [],
     [parentId],
   );

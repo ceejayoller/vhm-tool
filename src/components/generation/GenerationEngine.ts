@@ -123,6 +123,7 @@ export async function generateAssetsForParent(
         childId,
         childGeometry: child.geometry as Polygon,
         previewBlob,
+        sortOrder: i,
       });
 
       report({ phase: "rendering", current: i + 1, total });
