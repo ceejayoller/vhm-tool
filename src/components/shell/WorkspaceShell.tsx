@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { useProject } from "@/db/hooks";
 import { Topbar } from "./Topbar";
 import { ParentSidebar } from "@/components/library/ParentSidebar";
+import { TemplateSidebar } from "@/components/templates/TemplateSidebar";
 
 const LeafletMap = dynamic(() => import("@/components/map/LeafletMap"), {
   ssr: false,
@@ -73,11 +74,17 @@ export function WorkspaceShell({ projectId }: WorkspaceShellProps) {
             <LeafletMap projectId={projectId} />
           )}
         </div>
+        {selectedParentId && (
+          <TemplateSidebar
+            projectId={projectId}
+            parentId={selectedParentId}
+            onEditAssetAction={setEditingAssetId}
+          />
+        )}
         <ParentSidebar
           projectId={projectId}
           selectedParentId={selectedParentId}
           onSelectParentAction={setSelectedParentId}
-          onEditAsset={setEditingAssetId}
         />
       </div>
     </div>

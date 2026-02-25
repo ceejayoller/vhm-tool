@@ -21,6 +21,7 @@ export interface Parent {
   name: string;
   geometry: Polygon;
   color: string;
+  sortOrder: number;
   createdAt: number;
 }
 
@@ -35,6 +36,7 @@ export interface Asset {
   finalBlobId?: string;
   editState?: Record<string, unknown>;
   status: "generated" | "editing" | "final";
+  sortOrder: number;
   updatedAt: number;
 }
 
@@ -72,6 +74,34 @@ class GeoScreenshotDB extends Dexie {
       templates: "id, name, updatedAt",
       blobs: "id, kind, createdAt",
     });
+
+    this.version(2)
+      .stores({
+        projects: "id, name, createdAt, updatedAt",
+        parents: "id, projectId, createdAt, sortOrder",
+        assets: "id, projectId, parentId, childId, status, updatedAt, sortOrder",
+        templates: "id, name, updatedAt",
+        blobs: "id, kind, createdAt",
+      })
+      .upgrade(async (tx) => {
+        const parentsTable = tx.table("parents");
+        const parents = await parentsTable.toArray();
+        const orderedParents = parents.sort(
+          (a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0),
+        );
+        for (const [index, parent] of orderedParents.entries()) {
+          await parentsTable.update(parent.id, { sortOrder: index });
+        }
+
+        const assetsTable = tx.table("assets");
+        const assets = await assetsTable.toArray();
+        const orderedAssets = assets.sort(
+          (a, b) => (a.updatedAt ?? 0) - (b.updatedAt ?? 0),
+        );
+        for (const [index, asset] of orderedAssets.entries()) {
+          await assetsTable.update(asset.id, { sortOrder: index });
+        }
+      });
   }
 }
 
