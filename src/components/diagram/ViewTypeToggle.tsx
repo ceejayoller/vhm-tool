@@ -5,13 +5,13 @@ import type { DiagramViewType } from "@/types/diagram";
 
 interface ViewTypeToggleProps {
   value: DiagramViewType;
-  onChange: (value: DiagramViewType) => void;
+  onChangeAction: (value: DiagramViewType) => void;
   slotIndex: number;
 }
 
 export function ViewTypeToggle({
   value,
-  onChange,
+  onChangeAction,
   slotIndex,
 }: ViewTypeToggleProps) {
   return (
@@ -23,7 +23,7 @@ export function ViewTypeToggle({
         size="sm"
         variant={value === "plan" ? "secondary" : "ghost"}
         className="h-7 text-xs"
-        onClick={() => onChange("plan")}
+        onClick={() => onChangeAction("plan")}
       >
         Plan
       </Button>
@@ -31,7 +31,7 @@ export function ViewTypeToggle({
         size="sm"
         variant={value === "side" ? "secondary" : "ghost"}
         className="h-7 text-xs"
-        onClick={() => onChange("side")}
+        onClick={() => onChangeAction("side")}
       >
         Side
       </Button>

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -14,25 +15,28 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ScreenshotPickerModalProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChangeAction: (open: boolean) => void;
   projectId: string;
   excludeAssetId: string;
-  onSelect: (assetId: string) => void;
+  onSelectAction: (assetId: string) => void;
 }
 
 export function ScreenshotPickerModal({
   open,
-  onOpenChange,
+  onOpenChangeAction,
   projectId,
   excludeAssetId,
-  onSelect,
+  onSelectAction,
 }: ScreenshotPickerModalProps) {
   const assets = useProjectAssets(projectId);
   const parents = useParents(projectId);
   const [thumbUrls, setThumbUrls] = useState<Record<string, string>>({});
   const urlsRef = useRef<Record<string, string>>({});
 
-  const filtered = assets?.filter((a) => a.id !== excludeAssetId) ?? [];
+  const filtered = useMemo(
+    () => assets?.filter((a) => a.id !== excludeAssetId) ?? [],
+    [assets, excludeAssetId]
+  );
   const byParent = new Map<string, Asset[]>();
   for (const a of filtered) {
     const list = byParent.get(a.parentId) ?? [];
@@ -67,15 +71,15 @@ export function ScreenshotPickerModal({
       Object.values(urlsRef.current).forEach(URL.revokeObjectURL);
       urlsRef.current = {};
     };
-  }, [open, filtered.map((a) => a.id).join(",")]);
+  }, [open, filtered]);
 
   const handleSelect = (assetId: string) => {
-    onSelect(assetId);
-    onOpenChange(false);
+    onSelectAction(assetId);
+    onOpenChangeAction(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChangeAction}>
       <DialogContent className="max-w-md max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Choose screenshot for slot</DialogTitle>
@@ -100,10 +104,12 @@ export function ScreenshotPickerModal({
                         className="relative aspect-square rounded-md overflow-hidden border bg-muted hover:ring-2 hover:ring-primary transition-all"
                       >
                         {thumbUrls[asset.id] ? (
-                          <img
+                          <Image
                             src={thumbUrls[asset.id]}
                             alt={asset.childId}
-                            className="w-full h-full object-cover"
+                            fill
+                            sizes="(max-width: 768px) 33vw, 160px"
+                            className="object-cover"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">

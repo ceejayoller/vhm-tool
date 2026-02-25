@@ -161,7 +161,7 @@ export function EditorToolbar({
                     <ViewTypeToggle
                       slotIndex={i}
                       value={slot?.viewType ?? "plan"}
-                      onChange={(v) => onViewTypeChange(i, v)}
+                      onChangeAction={(v) => onViewTypeChange(i, v)}
                     />
                     {onSlotClick && i > 0 && (
                       <Button

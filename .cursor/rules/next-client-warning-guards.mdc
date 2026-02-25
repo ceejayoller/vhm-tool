@@ -1,0 +1,45 @@
+---
+description: Prevent common Next.js client-component and hook warnings
+alwaysApply: true
+---
+
+# Next Client Warning Guards
+
+Apply these checks whenever editing React components, especially files with `"use client"`.
+
+## 1) Client component callback props (TS71007)
+
+- In `"use client"` entry files, callback props must be named `action` or end with `Action`.
+- Prefer `onOpenChangeAction`, `onSelectAction`, `onSaveAction`, etc.
+- If a callback prop is only internal, move `"use client"` to a smaller leaf component instead of keeping it at a broader boundary.
+
+```tsx
+// ❌ BAD
+interface Props {
+  onSelect: (id: string) => void;
+}
+
+// ✅ GOOD
+interface Props {
+  onSelectAction: (id: string) => void;
+}
+```
+
+## 2) Hook dependency hygiene (react-hooks/exhaustive-deps)
+
+- Every value referenced inside `useEffect`/`useMemo`/`useCallback` must appear in dependencies.
+- Do not place complex expressions directly in dependency arrays; extract them to named variables first.
+
+```tsx
+// ❌ BAD
+useEffect(() => sync(filtered), [items.filter((x) => x.visible)]);
+
+// ✅ GOOD
+const visibleItems = items.filter((x) => x.visible);
+useEffect(() => sync(filtered), [filtered, visibleItems]);
+```
+
+## 3) Avoid raw `<img>` in Next.js (@next/next/no-img-element)
+
+- Use `Image` from `next/image` for UI-rendered images.
+- If you must use non-HTTP sources (for example `blob:` URLs), explain briefly in code and use an explicit lint-disable only at that line.
