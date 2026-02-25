@@ -444,13 +444,13 @@ export default function KonvaEditor({
       {projectId && (
         <ScreenshotPickerModal
           open={pickerOpen}
-          onOpenChange={(open) => {
+          onOpenChangeAction={(open) => {
             setPickerOpen(open);
             if (!open) setEditingSlotIndex(null);
           }}
           projectId={projectId}
           excludeAssetId={assetId}
-          onSelect={handlePickerSelect}
+          onSelectAction={handlePickerSelect}
         />
       )}
     </div>
