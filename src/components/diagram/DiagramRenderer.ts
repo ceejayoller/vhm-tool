@@ -26,7 +26,10 @@ export async function loadDiagramImages(
     if (slot?.assetId) ids.add(slot.assetId);
   }
   for (const id of ids) {
-    const asset = id === currentAsset.id ? currentAsset : assetsById.get(id);
+    let asset = id === currentAsset.id ? currentAsset : assetsById.get(id);
+    if (!asset) {
+      asset = await db.assets.get(id);
+    }
     if (asset) {
       const bm = await loadScreenshotImage(asset);
       if (bm) images.set(id, bm);
@@ -42,9 +45,21 @@ export async function loadScreenshotImage(
   asset: Asset,
 ): Promise<ImageBitmap | null> {
   const blobId =
-    asset.finalBlobId ?? asset.workingBlobId ?? asset.previewBlobId;
+    asset.previewBlobId ?? asset.workingBlobId ?? asset.finalBlobId;
   if (!blobId) return null;
   const record = await db.blobs.get(blobId);
+  if (!record) {
+    const latestAsset = await db.assets.get(asset.id);
+    const refreshedBlobId = latestAsset
+      ? latestAsset.previewBlobId ?? latestAsset.workingBlobId ?? latestAsset.finalBlobId
+      : null;
+    if (refreshedBlobId && refreshedBlobId !== blobId) {
+      const refreshedRecord = await db.blobs.get(refreshedBlobId);
+      if (refreshedRecord) {
+        return createImageBitmap(refreshedRecord.blob);
+      }
+    }
+  }
   if (!record) return null;
   return createImageBitmap(record.blob);
 }
@@ -101,7 +116,12 @@ export async function renderDiagramToBlob(
     const layout = slotLayouts[i];
     const assetId =
       slot?.assetId === undefined ? currentAssetId : slot.assetId;
-    const img = assetId ? images.get(assetId) ?? images.get(currentAssetId) : null;
+    const selectedImage = assetId ? images.get(assetId) : null;
+    const fallbackImage = images.get(currentAssetId);
+    const usesExplicitSlotAsset = slot?.assetId !== undefined;
+    const img = usesExplicitSlotAsset
+      ? selectedImage ?? null
+      : (selectedImage ?? fallbackImage ?? null);
 
     if (img) {
       const { imageRect } = layout;
