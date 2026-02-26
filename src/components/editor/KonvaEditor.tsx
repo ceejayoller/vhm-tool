@@ -187,7 +187,13 @@ export default function KonvaEditor({
 
   const handleStageClick = useCallback(
     (e: Konva.KonvaEventObject<MouseEvent>) => {
-      if (e.target === e.target.getStage()) {
+      const isStageTarget = e.target === e.target.getStage();
+      const isBackgroundImage =
+        !isStageTarget &&
+        e.target?.className === "Image" &&
+        !e.target?.id?.() &&
+        !e.target?.name?.();
+      if (isStageTarget || isBackgroundImage) {
         selectOverlay(null);
         setEditingTextId(null);
       }
@@ -287,10 +293,16 @@ export default function KonvaEditor({
       }
 
       const stage = stageRef.current;
+      const tr = transformerRef.current;
       const needComposite = stage && overlays.length > 0;
       if (needComposite) {
+        const prevNodes = tr?.nodes() ?? [];
+        tr?.nodes([]);
+        tr?.getLayer()?.batchDraw();
         const pixelRatio = CANVAS_SIZE / stageSize.width;
         const dataUrl = stage.toDataURL({ pixelRatio });
+        tr?.nodes(prevNodes);
+        tr?.getLayer()?.batchDraw();
         const resp = await fetch(dataUrl);
         const finalBlob = await resp.blob();
         const finalBlobId = await storeBlob(finalBlob, "final", "image/png");
@@ -389,6 +401,7 @@ export default function KonvaEditor({
                 image={baseImage}
                 width={CANVAS_SIZE}
                 height={CANVAS_SIZE}
+                listening={false}
               />
             )}
             {overlays.map((overlay) => {
