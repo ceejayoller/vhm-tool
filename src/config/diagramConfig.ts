@@ -4,40 +4,46 @@ export const SCALE_FACTOR = CANVAS_SIZE / LEGACY_CANVAS_SIZE;
 
 export const THUMBNAIL_CANVAS_SIZE = 360;
 
-// Layout
+// Layout (legacy, used by KonvaEditor / templates)
 export const TITLE_HEIGHT = 28 * SCALE_FACTOR;
 export const CONTENT_PADDING = 6 * SCALE_FACTOR;
 export const SLOT_GAP = 6 * SCALE_FACTOR;
 export const LABEL_MARGIN = 14 * SCALE_FACTOR;
 export const LABEL_FONT_SIZE = 10 * SCALE_FACTOR;
-export const TITLE_FONT_SIZE = 14 * SCALE_FACTOR;
 export const SEPARATOR_LINE_WIDTH = 1 * SCALE_FACTOR;
 export const SLOT_BORDER_WIDTH = 1 * SCALE_FACTOR;
 export const TITLE_TEXT_OFFSET_X = 4 * SCALE_FACTOR;
 export const TITLE_TEXT_OFFSET_Y = 6 * SCALE_FACTOR;
 
 // ---------------------------------------------------------------------------
-// Design tokens (minimal black & off-white)
+// Inspection-sheet design tokens (Satori diagram export)
 // ---------------------------------------------------------------------------
 
-// Colors
+// Layout
+export const INSPECTION_OUTER_PAD = 48;
+export const INSPECTION_PANEL_GAP = 22;
+export const INSPECTION_PANEL_PADDING = 18;
+export const INSPECTION_PANEL_RADIUS = 18;
+
+// Colors (neutral UI + accent)
 export const COLOR_BG = "#FFFFFF";
-export const COLOR_TITLE_TEXT = "#1A1A1A";
-export const COLOR_SEPARATOR = "#D4D4D4";
-export const COLOR_DIVIDER = "#E0E0E0";
-export const COLOR_EMPTY_SLOT_BG = "#F5F5F5";
-export const COLOR_EMPTY_SLOT_TEXT = "#A3A3A3";
-export const COLOR_LABEL_TEXT = "#737373";
+export const COLOR_PANEL_BG = "#F8FAFC";
+export const COLOR_BORDER = "#E5E7EB";
+export const COLOR_TEXT = "#111827";
+export const COLOR_SUBTEXT = "#6B7280";
+export const COLOR_ACCENT = "#EF4444";
+export const COLOR_EMPTY_SLOT_BG = "#F8FAFC";
+export const COLOR_EMPTY_SLOT_TEXT = "#6B7280";
 
 // Typography
-export const TITLE_LETTER_SPACING = 1.5;
-export const LABEL_LETTER_SPACING = 2;
-export const LABEL_FONT_SIZE_NEW = 6 * SCALE_FACTOR;
-
-// Layout refinements
-export const TITLE_BAR_HEIGHT = 28 * SCALE_FACTOR;
-export const TITLE_PADDING_X = 8 * SCALE_FACTOR;
-export const CONTENT_PADDING_NEW = 4 * SCALE_FACTOR;
-export const SEPARATOR_HEIGHT = 1 * SCALE_FACTOR;
-export const DIVIDER_WIDTH = 1 * SCALE_FACTOR;
-export const LABEL_MARGIN_INNER = 8 * SCALE_FACTOR;
+export const INSPECTION_TITLE_FONT_SIZE = 44;
+export const INSPECTION_TITLE_FONT_WEIGHT = 800;
+export const INSPECTION_SUBTITLE_FONT_SIZE = 18;
+export const INSPECTION_SUBTITLE_FONT_WEIGHT = 600;
+export const INSPECTION_PANEL_LABEL_FONT_SIZE = 13;
+export const INSPECTION_PANEL_LABEL_FONT_WEIGHT = 800;
+export const INSPECTION_PANEL_LABEL_LETTER_SPACING = 1;
+export const INSPECTION_LEGEND_FONT_SIZE = 16;
+export const INSPECTION_LEGEND_FONT_WEIGHT = 600;
+export const INSPECTION_COMPASS_FONT_SIZE = 18;
+export const INSPECTION_COMPASS_FONT_WEIGHT = 600;
