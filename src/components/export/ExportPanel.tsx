@@ -10,8 +10,8 @@ import type { Asset } from "@/db/db";
 import { getDiagramConfig } from "@/types/diagram";
 import {
   renderDiagramToBlob,
-  loadDiagramImages,
-} from "@/components/diagram/DiagramRenderer";
+  loadDiagramImageDataUrls,
+} from "@/components/diagram/SatoriDiagramRenderer";
 
 interface ExportPanelProps {
   projectId: string;
@@ -55,12 +55,8 @@ export function ExportPanel({ projectId, parentId }: ExportPanelProps) {
           }
           assetsById.set(asset.id, asset);
 
-          const images = await loadDiagramImages(config, asset, assetsById);
-          const blob = await renderDiagramToBlob(config, asset.id, images);
-
-          for (const [, bm] of images) {
-            bm.close();
-          }
+          const imageDataUrls = await loadDiagramImageDataUrls(config, asset, assetsById);
+          const blob = await renderDiagramToBlob(config, asset.id, imageDataUrls);
 
           const url = URL.createObjectURL(blob);
           const link = document.createElement("a");

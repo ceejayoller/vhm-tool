@@ -8,8 +8,8 @@ import Image from "next/image";
 import { getDiagramConfig } from "@/types/diagram";
 import {
   renderDiagramToBlob,
-  loadDiagramImages,
-} from "@/components/diagram/DiagramRenderer";
+  loadDiagramImageDataUrls,
+} from "@/components/diagram/SatoriDiagramRenderer";
 import { THUMBNAIL_CANVAS_SIZE } from "@/config/diagramConfig";
 
 interface AssetCardProps {
@@ -34,14 +34,10 @@ export function AssetCard({ asset, parentName, onEdit, onDelete }: AssetCardProp
       }
       assetsById.set(asset.id, asset);
 
-      const images = await loadDiagramImages(config, asset, assetsById);
-      const blob = await renderDiagramToBlob(config, asset.id, images, {
+      const imageDataUrls = await loadDiagramImageDataUrls(config, asset, assetsById);
+      const blob = await renderDiagramToBlob(config, asset.id, imageDataUrls, {
         size: THUMBNAIL_CANVAS_SIZE,
       });
-
-      for (const [, bm] of images) {
-        bm.close();
-      }
 
       url = URL.createObjectURL(blob);
       setThumbnailUrl(url);
@@ -76,12 +72,8 @@ export function AssetCard({ asset, parentName, onEdit, onDelete }: AssetCardProp
     }
     assetsById.set(asset.id, asset);
 
-    const images = await loadDiagramImages(config, asset, assetsById);
-    const blob = await renderDiagramToBlob(config, asset.id, images);
-
-    for (const [, bm] of images) {
-      bm.close();
-    }
+    const imageDataUrls = await loadDiagramImageDataUrls(config, asset, assetsById);
+    const blob = await renderDiagramToBlob(config, asset.id, imageDataUrls);
 
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
