@@ -29,7 +29,8 @@ import {
   loadDiagramImages,
 } from "@/components/diagram/DiagramRenderer";
 import { ScreenshotPickerModal } from "@/components/diagram/ScreenshotPickerModal";
-import type { TemplateOverlay } from "@/types/template";
+import type { TemplateOverlay, TextOverlay } from "@/types/template";
+import { TextPropertiesPanel } from "./TextPropertiesPanel";
 import {
   CANVAS_SIZE,
   LEGACY_CANVAS_SIZE,
@@ -53,11 +54,13 @@ export default function KonvaEditor({
     width: CANVAS_SIZE,
     height: CANVAS_SIZE,
   });
+  const [stageOffset, setStageOffset] = useState({ x: 0, y: 0 });
   const [diagramConfig, setDiagramConfig] = useState<DiagramConfig | null>(null);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [editingSlotIndex, setEditingSlotIndex] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
+  const [editingTextId, setEditingTextId] = useState<string | null>(null);
 
   const {
     overlays,
@@ -144,10 +147,14 @@ export default function KonvaEditor({
           rect.width / CANVAS_SIZE,
           rect.height / CANVAS_SIZE,
         );
-        setStageSize({
-          width: CANVAS_SIZE * scale,
-          height: CANVAS_SIZE * scale,
+        const width = CANVAS_SIZE * scale;
+        const height = CANVAS_SIZE * scale;
+        setStageSize({ width, height });
+        setStageOffset({
+          x: (rect.width - width) / 2,
+          y: (rect.height - height) / 2,
         });
+        setEditingTextId(null);
       }
     };
     updateSize();
@@ -160,6 +167,12 @@ export default function KonvaEditor({
     const stage = stageRef.current;
     if (!tr || !stage) return;
 
+    if (editingTextId) {
+      tr.nodes([]);
+      tr.getLayer()?.batchDraw();
+      return;
+    }
+
     if (selectedOverlayId) {
       const node = stage.findOne(`#${selectedOverlayId}`);
       if (node) {
@@ -170,12 +183,13 @@ export default function KonvaEditor({
     }
     tr.nodes([]);
     tr.getLayer()?.batchDraw();
-  }, [selectedOverlayId, overlays]);
+  }, [selectedOverlayId, overlays, editingTextId]);
 
   const handleStageClick = useCallback(
     (e: Konva.KonvaEventObject<MouseEvent>) => {
       if (e.target === e.target.getStage()) {
         selectOverlay(null);
+        setEditingTextId(null);
       }
     },
     [selectOverlay],
@@ -324,6 +338,19 @@ export default function KonvaEditor({
   const scale =
     stageSize.width > 0 ? stageSize.width / CANVAS_SIZE : 1;
 
+  const selectedTextOverlay =
+    overlays.find(
+      (o): o is TextOverlay =>
+        o.id === selectedOverlayId && o.type === "text",
+    ) ?? null;
+
+  const handleTextPropertyUpdate = useCallback(
+    (updates: Partial<TextOverlay>) => {
+      if (selectedOverlayId) updateOverlay(selectedOverlayId, updates);
+    },
+    [selectedOverlayId, updateOverlay],
+  );
+
   return (
     <div className="flex flex-col h-full">
       <EditorToolbar
@@ -343,8 +370,12 @@ export default function KonvaEditor({
           {saving ? "Saving..." : "Save"}
         </button>
       </div>
-      <div ref={containerRef} className="flex-1 bg-muted overflow-hidden flex items-center justify-center">
-        <Stage
+      <div className="flex-1 flex overflow-hidden">
+        <div
+          ref={containerRef}
+          className="flex-1 bg-muted overflow-hidden flex items-center justify-center relative"
+        >
+          <Stage
           ref={stageRef}
           width={stageSize.width}
           height={stageSize.height}
@@ -354,7 +385,11 @@ export default function KonvaEditor({
         >
           <Layer>
             {baseImage && (
-              <KImage image={baseImage} width={CANVAS_SIZE} height={CANVAS_SIZE} />
+              <KImage
+                image={baseImage}
+                width={CANVAS_SIZE}
+                height={CANVAS_SIZE}
+              />
             )}
             {overlays.map((overlay) => {
               const commonProps = {
@@ -381,6 +416,9 @@ export default function KonvaEditor({
                     fontFamily={overlay.fontFamily}
                     fill={overlay.fill}
                     rotation={overlay.rotation}
+                    visible={editingTextId !== overlay.id}
+                    onDblClick={() => setEditingTextId(overlay.id)}
+                    onDblTap={() => setEditingTextId(overlay.id)}
                   />
                 );
               }
@@ -439,6 +477,63 @@ export default function KonvaEditor({
             <Transformer ref={transformerRef} />
           </Layer>
         </Stage>
+          {editingTextId && (() => {
+            const overlay = overlays.find(
+              (o): o is TextOverlay => o.id === editingTextId && o.type === "text",
+            );
+            if (!overlay) return null;
+            const left = stageOffset.x + overlay.x * scale;
+            const top = stageOffset.y + overlay.y * scale;
+            return (
+              <textarea
+                autoFocus
+                defaultValue={overlay.text}
+                style={{
+                  position: "absolute",
+                  left,
+                  top,
+                  fontSize: overlay.fontSize * scale,
+                  fontFamily: overlay.fontFamily,
+                  color: overlay.fill,
+                  transform: `rotate(${overlay.rotation}deg)`,
+                  transformOrigin: "top left",
+                  background: "transparent",
+                  border: "1px solid hsl(var(--ring))",
+                  outline: "none",
+                  resize: "none",
+                  padding: 2,
+                  minWidth: 60,
+                  minHeight: 20,
+                }}
+                onBlur={(e) => {
+                  updateOverlay(overlay.id, { text: e.target.value });
+                  setEditingTextId(null);
+                }}
+                onKeyDown={(e) => {
+                  const textarea = e.currentTarget;
+                  if (e.key === "Escape") {
+                    textarea.value = overlay.text;
+                    textarea.blur();
+                    setEditingTextId(null);
+                  }
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    updateOverlay(overlay.id, { text: textarea.value });
+                    setEditingTextId(null);
+                    textarea.blur();
+                  }
+                }}
+                aria-label="Edit text"
+              />
+            );
+          })()}
+        </div>
+        {selectedTextOverlay && (
+          <TextPropertiesPanel
+            overlay={selectedTextOverlay}
+            onUpdateAction={handleTextPropertyUpdate}
+          />
+        )}
       </div>
 
       {projectId && (
