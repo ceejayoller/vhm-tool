@@ -5,23 +5,21 @@ import type { Asset } from "@/db/db";
 import type { DiagramConfig, DiagramViewType } from "@/types/diagram";
 import {
   CANVAS_SIZE,
-  TITLE_FONT_SIZE,
-  LABEL_MARGIN,
   COLOR_BG,
-  COLOR_TITLE_TEXT,
-  COLOR_SEPARATOR,
-  COLOR_DIVIDER,
-  COLOR_EMPTY_SLOT_BG,
+  COLOR_PANEL_BG,
+  COLOR_TEXT,
+  COLOR_SUBTEXT,
+  COLOR_ACCENT,
   COLOR_EMPTY_SLOT_TEXT,
-  COLOR_LABEL_TEXT,
-  TITLE_LETTER_SPACING,
-  LABEL_LETTER_SPACING,
-  LABEL_FONT_SIZE_NEW,
-  TITLE_BAR_HEIGHT,
-  TITLE_PADDING_X,
-  CONTENT_PADDING_NEW,
-  SEPARATOR_HEIGHT,
-  DIVIDER_WIDTH,
+  INSPECTION_PANEL_GAP,
+  INSPECTION_PANEL_RADIUS,
+  INSPECTION_TITLE_FONT_SIZE,
+  INSPECTION_TITLE_FONT_WEIGHT,
+  INSPECTION_PANEL_LABEL_FONT_SIZE,
+  INSPECTION_LEGEND_FONT_SIZE,
+  INSPECTION_LEGEND_FONT_WEIGHT,
+  INSPECTION_COMPASS_FONT_SIZE,
+  INSPECTION_COMPASS_FONT_WEIGHT,
 } from "@/config/diagramConfig";
 
 // ---------------------------------------------------------------------------
@@ -55,6 +53,25 @@ async function ensureInitialized(): Promise<Font[]> {
 // ---------------------------------------------------------------------------
 // Blob / data-URL helpers
 // ---------------------------------------------------------------------------
+
+async function getImageDimensions(
+  src: string,
+): Promise<{ width: number; height: number } | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const width = img.naturalWidth || img.width;
+      const height = img.naturalHeight || img.height;
+      if (width && height) {
+        resolve({ width, height });
+      } else {
+        resolve(null);
+      }
+    };
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+}
 
 function blobToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -113,123 +130,376 @@ export async function loadDiagramImageDataUrls(
 }
 
 // ---------------------------------------------------------------------------
-// Label helpers
+// Inspection-sheet components
 // ---------------------------------------------------------------------------
 
-interface LabelDef {
-  text: string;
-  position: "top" | "bottom" | "left" | "right";
+function Header(props: { title: string; scale: number }) {
+  const { title, scale } = props;
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "flex-end",
+        paddingBottom: 0,
+        borderBottom: "none",
+      }}
+    >
+      <div
+        style={{
+          fontSize: INSPECTION_TITLE_FONT_SIZE * scale,
+          fontWeight: INSPECTION_TITLE_FONT_WEIGHT,
+          color: COLOR_TEXT,
+          lineHeight: 1.05,
+        }}
+      >
+        {title}
+      </div>
+    </div>
+  );
 }
 
-function getLabels(viewType: DiagramViewType): LabelDef[] {
-  if (viewType === "plan") {
-    return [
-      { text: "Port", position: "top" },
-      { text: "Stbd", position: "bottom" },
-      { text: "Fwd", position: "right" },
-      { text: "Aft", position: "left" },
-    ];
+const compassLabelStyle = (scale: number) => ({
+  fontSize: INSPECTION_COMPASS_FONT_SIZE * scale,
+  fontWeight: INSPECTION_COMPASS_FONT_WEIGHT,
+  color: COLOR_SUBTEXT,
+  letterSpacing: 1,
+});
+
+function CompassLayout(props: {
+  viewType: DiagramViewType;
+  scale: number;
+  imageDimensions?: { width: number; height: number };
+  containerSize?: { width: number; height: number };
+  labelYOffset?: number;
+  labelXOffset?: number;
+  isSingle?: boolean;
+  children: React.ReactNode;
+}) {
+  const {
+    viewType,
+    scale,
+    imageDimensions,
+    containerSize,
+    labelYOffset = 0,
+    labelXOffset = 0,
+    isSingle = false,
+    children,
+  } = props;
+  const bandSize = 12 * scale;
+  const isPlan = viewType === "plan";
+  const labelStyle = compassLabelStyle(scale);
+  const labelGap = 6 * scale;
+  const labelGapWide = 10 * scale;
+  const singleBottomPad = isSingle ? 8 * scale : 0;
+  const availableBox = containerSize
+    ? {
+        width: Math.max(
+          containerSize.width - (bandSize * 2 + labelGapWide * 2),
+          0,
+        ),
+        height: Math.max(
+          containerSize.height -
+            (isPlan ? bandSize * 2 + labelGap * 2 + singleBottomPad : 0),
+          0,
+        ),
+      }
+    : null;
+  const fitScale =
+    imageDimensions && availableBox
+      ? Math.min(
+          availableBox.width / imageDimensions.width,
+          availableBox.height / imageDimensions.height,
+          1,
+        )
+      : null;
+  const imageBoxStyle = imageDimensions && fitScale !== null
+    ? {
+        width: Math.round(imageDimensions.width * fitScale),
+        height: Math.round(imageDimensions.height * fitScale),
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }
+    : {
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      };
+
+  if (isPlan) {
+    return (
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          paddingBottom: singleBottomPad,
+          minHeight: 0,
+          minWidth: 0,
+        }}
+      >
+        <div
+          style={{
+            flex: "0 0 auto",
+            height: bandSize,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: labelGap,
+            transform: `translateX(${labelXOffset}px)`,
+            ...labelStyle,
+            textAlign: "center" as const,
+          }}
+        >
+          PORT
+        </div>
+        <div
+          style={{
+            flex: "0 0 auto",
+            display: "flex",
+            flexDirection: "row",
+            minHeight: 0,
+            minWidth: 0,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              minHeight: 0,
+              minWidth: 0,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <div
+              style={{
+                flex: "0 0 auto",
+                width: bandSize,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginRight: labelGapWide,
+                transform: `translateY(${labelYOffset}px)`,
+                ...labelStyle,
+              }}
+            >
+              AFT
+            </div>
+            <div style={imageBoxStyle}>{children}</div>
+            <div
+              style={{
+                flex: "0 0 auto",
+                width: bandSize,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginLeft: labelGapWide,
+                transform: `translateY(${labelYOffset}px)`,
+                ...labelStyle,
+              }}
+            >
+              FWD
+            </div>
+          </div>
+        </div>
+        <div
+          style={{
+            flex: "0 0 auto",
+            height: bandSize,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            marginTop: labelGap + singleBottomPad,
+            marginBottom: singleBottomPad,
+            transform: `translateX(${labelXOffset}px)`,
+            ...labelStyle,
+            textAlign: "center" as const,
+          }}
+        >
+          STBD
+        </div>
+      </div>
+    );
   }
-  return [
-    { text: "Fwd", position: "right" },
-    { text: "Aft", position: "left" },
-  ];
+  return (
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        flexDirection: "row",
+        minHeight: 0,
+        minWidth: 0,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          minHeight: 0,
+          minWidth: 0,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div
+          style={{
+            flex: "0 0 auto",
+            width: bandSize,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            marginRight: labelGapWide,
+            transform: `translateY(${labelYOffset}px)`,
+            ...labelStyle,
+          }}
+        >
+          AFT
+        </div>
+        <div style={imageBoxStyle}>{children}</div>
+        <div
+          style={{
+            flex: "0 0 auto",
+            width: bandSize,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            marginLeft: labelGapWide,
+            transform: `translateY(${labelYOffset}px)`,
+            ...labelStyle,
+          }}
+        >
+          FWD
+        </div>
+      </div>
+    </div>
+  );
 }
 
-function labelContainerStyle(
-  position: "top" | "bottom" | "left" | "right",
-  scale: number,
-  stagger: "none" | "first" | "second",
-): Record<string, unknown> {
-  const margin = LABEL_MARGIN * scale;
-  const base: Record<string, unknown> = {
-    position: "absolute",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  };
+function ImageWithCompass(props: {
+  src: string;
+  viewType: DiagramViewType;
+  scale: number;
+  imageDimensions?: { width: number; height: number };
+  containerSize?: { width: number; height: number };
+  labelYOffset?: number;
+  isSingle?: boolean;
+  labelXOffset?: number;
+}) {
+  const {
+    src,
+    viewType,
+    scale,
+    imageDimensions,
+    containerSize,
+    labelYOffset,
+    isSingle,
+    labelXOffset,
+  } = props;
 
-  // Subtle offset so adjacent inner-edge labels don't collide.
-  // "first" nudges toward start (up / left), "second" toward end (down / right).
-  const offset = "5%";
-
-  switch (position) {
-    case "top":
-      if (stagger === "first") {
-        return { ...base, top: 0, left: 0, right: offset, height: margin };
-      }
-      if (stagger === "second") {
-        return { ...base, top: 0, left: offset, right: 0, height: margin };
-      }
-      return { ...base, top: 0, left: 0, right: 0, height: margin };
-    case "bottom":
-      if (stagger === "first") {
-        return { ...base, bottom: 0, left: 0, right: offset, height: margin };
-      }
-      if (stagger === "second") {
-        return { ...base, bottom: 0, left: offset, right: 0, height: margin };
-      }
-      return { ...base, bottom: 0, left: 0, right: 0, height: margin };
-    case "left":
-      if (stagger === "first") {
-        return { ...base, left: 0, top: 0, bottom: offset, width: margin };
-      }
-      if (stagger === "second") {
-        return { ...base, left: 0, top: offset, bottom: 0, width: margin };
-      }
-      return { ...base, left: 0, top: 0, bottom: 0, width: margin };
-    case "right":
-      if (stagger === "first") {
-        return { ...base, right: 0, top: 0, bottom: offset, width: margin };
-      }
-      if (stagger === "second") {
-        return { ...base, right: 0, top: offset, bottom: 0, width: margin };
-      }
-      return { ...base, right: 0, top: 0, bottom: 0, width: margin };
-  }
+  return (
+    <CompassLayout
+      viewType={viewType}
+      scale={scale}
+      imageDimensions={imageDimensions}
+      containerSize={containerSize}
+      labelYOffset={labelYOffset}
+      isSingle={isSingle}
+      labelXOffset={labelXOffset}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        alt=""
+        src={src}
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "contain" as const,
+        }}
+      />
+    </CompassLayout>
+  );
 }
 
-function labelTextStyle(scale: number): Record<string, unknown> {
-  return {
-    fontSize: LABEL_FONT_SIZE_NEW * scale,
-    fontFamily: "Inter",
-    fontWeight: 600,
-    color: COLOR_LABEL_TEXT,
-    letterSpacing: LABEL_LETTER_SPACING * scale,
-    textTransform: "uppercase" as const,
-    lineHeight: 1,
-  };
+function Legend(props: { scale: number }) {
+  const { scale } = props;
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        marginTop: 14 * scale,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <div
+          style={{
+            width: 14 * scale,
+            height: 14 * scale,
+            borderRadius: 4 * scale,
+            backgroundColor: COLOR_ACCENT,
+            marginRight: 8 * scale,
+          }}
+        />
+        <div
+          style={{
+            fontSize: INSPECTION_LEGEND_FONT_SIZE * scale,
+            fontWeight: INSPECTION_LEGEND_FONT_WEIGHT,
+            color: COLOR_SUBTEXT,
+          }}
+        >
+          Red highlight = inspection zone
+        </div>
+      </div>
+      <div
+        style={{
+          fontSize: INSPECTION_LEGEND_FONT_SIZE * scale,
+          fontWeight: INSPECTION_LEGEND_FONT_WEIGHT,
+          color: COLOR_SUBTEXT,
+        }}
+      >
+        For reference only
+      </div>
+    </div>
+  );
 }
 
-/**
- * For multi-slot layouts, returns stagger info so inner-edge labels
- * don't overlap across the divider. Both labels on the same axis
- * within a slot share the same offset to stay visually aligned.
- *
- * Row layout (left/right labels stagger vertically):
- *   slot 0: left + right → "second" (nudged down)
- *   slot 1: left + right → "first"  (nudged up)
- *
- * Stacked layout (top/bottom labels stagger horizontally):
- *   slot 0: top + bottom → "second" (nudged right)
- *   slot 1: top + bottom → "first"  (nudged left)
- */
-function getStaggerMap(
-  isMultiSlot: boolean,
-  isStacked: boolean,
-  slotIndex: number,
-): Map<string, "first" | "second"> {
-  const map = new Map<string, "first" | "second">();
-  if (!isMultiSlot) return map;
-  const value: "first" | "second" = slotIndex === 0 ? "second" : "first";
-  if (isStacked) {
-    map.set("top", value);
-    map.set("bottom", value);
-  } else {
-    map.set("left", value);
-    map.set("right", value);
-  }
-  return map;
+function Panel(props: {
+  scale: number;
+  flex?: number;
+  children: React.ReactNode;
+}) {
+  const { scale, flex = 1, children } = props;
+  const pad = 0;
+  const radius = INSPECTION_PANEL_RADIUS * scale;
+
+  return (
+    <div
+      style={{
+        flex,
+        backgroundColor: COLOR_PANEL_BG,
+        borderRadius: radius,
+        padding: pad,
+        display: "flex",
+        flexDirection: "column",
+        minHeight: 0,
+        minWidth: 0,
+      }}
+    >
+      {children}
+    </div>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -240,67 +510,57 @@ function DiagramElement(props: {
   config: DiagramConfig;
   currentAssetId: string;
   imageDataUrls: Map<string, string>;
+  imageDimensions: Map<string, { width: number; height: number }>;
   size: number;
 }) {
-  const { config, currentAssetId, imageDataUrls, size } = props;
+  const { config, currentAssetId, imageDataUrls, imageDimensions, size } = props;
   const scale = size / CANVAS_SIZE;
+  const pad = 0;
+  const gap = INSPECTION_PANEL_GAP * scale;
+  const labelSafePad = (INSPECTION_COMPASS_FONT_SIZE + 10) * scale;
+  const headerHeight = INSPECTION_TITLE_FONT_SIZE * scale * 1.05;
+  const showLegend = false;
+  const legendHeight = showLegend
+    ? 14 * scale + INSPECTION_LEGEND_FONT_SIZE * scale * 1.2
+    : 0;
+  const panelAreaHeight = Math.max(
+    size - pad * 2 - headerHeight - 22 * scale - legendHeight,
+    0,
+  );
+  const panelAreaWidth = Math.max(size - pad * 2, 0);
 
   const slotCount = config.templateType === "single" ? 1 : 2;
   const slots = config.slots.slice(0, slotCount);
-
-  const isMultiSlot = config.templateType !== "single";
   const isStacked = config.templateType === "stacked";
 
   return (
     <div
       style={{
-        display: "flex",
-        flexDirection: "column",
         width: size,
         height: size,
-        background: COLOR_BG,
+        backgroundColor: COLOR_BG,
+        paddingTop: 12 * scale,
+        paddingBottom: 12 * scale,
+        display: "flex",
+        flexDirection: "column",
         fontFamily: "Inter",
       }}
     >
-      {/* Title bar */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          height: TITLE_BAR_HEIGHT * scale,
-          paddingLeft: TITLE_PADDING_X * scale,
-          paddingRight: TITLE_PADDING_X * scale,
-          fontSize: TITLE_FONT_SIZE * scale,
-          fontWeight: 700,
-          color: COLOR_TITLE_TEXT,
-          letterSpacing: TITLE_LETTER_SPACING * scale,
-          textTransform: "uppercase" as const,
-          lineHeight: 1,
-        }}
-      >
-        {config.title}
-      </div>
+      <Header title={config.title} scale={scale} />
 
-      {/* Separator line under title */}
       <div
         style={{
-          height: SEPARATOR_HEIGHT * scale,
-          background: COLOR_SEPARATOR,
-          width: "100%",
-          flexShrink: 0,
-        }}
-      />
-
-      {/* Content area with slots */}
-      <div
-        style={{
-          display: "flex",
+          marginTop: 22 * scale,
           flex: 1,
-          padding: CONTENT_PADDING_NEW * scale,
+          display: "flex",
           flexDirection: isStacked ? "column" : "row",
+          gap,
+          paddingLeft: config.templateType === "row" ? labelSafePad : 0,
+          paddingRight: config.templateType === "row" ? labelSafePad : 0,
         }}
       >
         {slots.map((slot, i) => {
+          const stackedFlex = isStacked ? 5 : 1;
           const assetId =
             slot?.assetId === undefined ? currentAssetId : slot.assetId;
           const usesExplicitSlotAsset = slot?.assetId !== undefined;
@@ -311,103 +571,66 @@ function DiagramElement(props: {
             : (selectedUrl ?? fallbackUrl ?? null);
 
           const viewType = slot?.viewType ?? "plan";
-          const labels = getLabels(viewType);
-          const staggerMap = getStaggerMap(isMultiSlot, isStacked, i);
+          const slotImageDimensions = assetId
+            ? imageDimensions.get(assetId)
+            : undefined;
+          const panelWidth = isStacked
+            ? panelAreaWidth
+            : config.templateType === "row"
+              ? Math.max((panelAreaWidth - gap) / 2, 0)
+              : panelAreaWidth;
+          const panelHeight = isStacked
+            ? Math.max(
+                ((panelAreaHeight - gap) * stackedFlex) / 10,
+                0,
+              )
+            : panelAreaHeight;
+          const labelYOffset =
+            config.templateType === "row"
+              ? (i === 0 ? 20 * scale : -20 * scale)
+              : 0;
+          const labelXOffset =
+            config.templateType === "stacked"
+              ? (i === 0 ? 30 * scale : -30 * scale)
+              : 0;
+          const isSingle = config.templateType === "single";
 
-          const margin = LABEL_MARGIN * scale;
-
-          return [
-            // Divider line between slots (only before the second slot)
-            isMultiSlot && i === 1 && (
-              <div
-                key="divider"
-                style={{
-                  flexShrink: 0,
-                  background: COLOR_DIVIDER,
-                  ...(isStacked
-                    ? { height: DIVIDER_WIDTH * scale, width: "100%" }
-                    : { width: DIVIDER_WIDTH * scale, height: "100%" }),
-                }}
-              />
-            ),
-            <div
-              key={i}
-              style={{
-                display: "flex",
-                flex: 1,
-                position: "relative",
-                background: imgUrl ? COLOR_BG : COLOR_EMPTY_SLOT_BG,
-              }}
-            >
-              {/* Image container — inset by label margin on all sides */}
-              {imgUrl && (
+          return (
+            <Panel key={i} scale={scale} flex={stackedFlex}>
+              {imgUrl ? (
+                <ImageWithCompass
+                  src={imgUrl}
+                  viewType={viewType}
+                  scale={scale}
+                  imageDimensions={slotImageDimensions}
+                  containerSize={{ width: panelWidth, height: panelHeight }}
+                  labelYOffset={labelYOffset}
+                  isSingle={isSingle}
+                  labelXOffset={labelXOffset}
+                />
+              ) : (
                 <div
                   style={{
                     display: "flex",
-                    position: "absolute",
-                    top: margin,
-                    left: margin,
-                    right: margin,
-                    bottom: margin,
                     alignItems: "center",
                     justifyContent: "center",
-                    overflow: "hidden",
-                  }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    alt=""
-                    src={imgUrl}
-                    style={{
-                      maxWidth: "100%",
-                      maxHeight: "100%",
-                      objectFit: "contain",
-                    }}
-                  />
-                </div>
-              )}
-
-              {/* Empty slot placeholder */}
-              {!imgUrl && (
-                <div
-                  style={{
-                    display: "flex",
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: LABEL_FONT_SIZE_NEW * scale,
+                    width: "100%",
+                    height: "100%",
+                    fontSize: INSPECTION_PANEL_LABEL_FONT_SIZE * scale,
                     fontFamily: "Inter",
                     color: COLOR_EMPTY_SLOT_TEXT,
-                    letterSpacing: LABEL_LETTER_SPACING * scale,
                     textTransform: "uppercase" as const,
                   }}
                 >
                   No Screenshot
                 </div>
               )}
-
-              {/* Directional labels */}
-              {labels.map((label) => {
-                const stagger = staggerMap.get(label.position) ?? "none";
-                return (
-                  <div
-                    key={label.text}
-                    style={labelContainerStyle(label.position, scale, stagger) as Record<string, string | number>}
-                  >
-                    <div style={labelTextStyle(scale) as Record<string, string | number>}>
-                      {label.text}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>,
-          ];
+            </Panel>
+          );
         })}
       </div>
+
+      {showLegend ? <Legend scale={scale} /> : null}
     </div>
   );
 }
@@ -459,11 +682,31 @@ export async function renderDiagramToBlob(
 ): Promise<Blob> {
   const size = options?.size ?? CANVAS_SIZE;
   const fonts = await ensureInitialized();
+  const slotCount = config.templateType === "single" ? 1 : 2;
+  const slots = config.slots.slice(0, slotCount);
+  const usedAssetIds = new Set<string>();
+
+  for (const slot of slots) {
+    const assetId =
+      slot?.assetId === undefined ? currentAssetId : slot.assetId;
+    if (assetId) usedAssetIds.add(assetId);
+  }
+
+  const imageDimensions = new Map<string, { width: number; height: number }>();
+  for (const assetId of usedAssetIds) {
+    const src = imageDataUrls.get(assetId);
+    if (!src) continue;
+    const dimensions = await getImageDimensions(src);
+    if (dimensions) {
+      imageDimensions.set(assetId, dimensions);
+    }
+  }
 
   const element = DiagramElement({
     config,
     currentAssetId,
     imageDataUrls,
+    imageDimensions,
     size,
   });
 
