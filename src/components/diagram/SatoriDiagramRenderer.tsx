@@ -6,18 +6,13 @@ import type { DiagramConfig, DiagramViewType } from "@/types/diagram";
 import {
   CANVAS_SIZE,
   COLOR_BG,
-  COLOR_PANEL_BG,
   COLOR_TEXT,
   COLOR_SUBTEXT,
-  COLOR_ACCENT,
   COLOR_EMPTY_SLOT_TEXT,
   INSPECTION_PANEL_GAP,
-  INSPECTION_PANEL_RADIUS,
   INSPECTION_TITLE_FONT_SIZE,
   INSPECTION_TITLE_FONT_WEIGHT,
   INSPECTION_PANEL_LABEL_FONT_SIZE,
-  INSPECTION_LEGEND_FONT_SIZE,
-  INSPECTION_LEGEND_FONT_WEIGHT,
   INSPECTION_COMPASS_FONT_SIZE,
   INSPECTION_COMPASS_FONT_WEIGHT,
 } from "@/config/diagramConfig";
@@ -142,6 +137,7 @@ function Header(props: { title: string; scale: number }) {
         justifyContent: "space-between",
         alignItems: "flex-end",
         paddingBottom: 0,
+        paddingLeft: 12 * scale,
         borderBottom: "none",
       }}
     >
@@ -159,6 +155,7 @@ function Header(props: { title: string; scale: number }) {
   );
 }
 
+// Port, Stbd, Fwd, Aft
 const compassLabelStyle = (scale: number) => ({
   fontSize: INSPECTION_COMPASS_FONT_SIZE * scale,
   fontWeight: INSPECTION_COMPASS_FONT_WEIGHT,
@@ -432,64 +429,18 @@ function ImageWithCompass(props: {
   );
 }
 
-function Legend(props: { scale: number }) {
-  const { scale } = props;
-  return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        marginTop: 14 * scale,
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center" }}>
-        <div
-          style={{
-            width: 14 * scale,
-            height: 14 * scale,
-            borderRadius: 4 * scale,
-            backgroundColor: COLOR_ACCENT,
-            marginRight: 8 * scale,
-          }}
-        />
-        <div
-          style={{
-            fontSize: INSPECTION_LEGEND_FONT_SIZE * scale,
-            fontWeight: INSPECTION_LEGEND_FONT_WEIGHT,
-            color: COLOR_SUBTEXT,
-          }}
-        >
-          Red highlight = inspection zone
-        </div>
-      </div>
-      <div
-        style={{
-          fontSize: INSPECTION_LEGEND_FONT_SIZE * scale,
-          fontWeight: INSPECTION_LEGEND_FONT_WEIGHT,
-          color: COLOR_SUBTEXT,
-        }}
-      >
-        For reference only
-      </div>
-    </div>
-  );
-}
-
 function Panel(props: {
   scale: number;
   flex?: number;
   children: React.ReactNode;
 }) {
-  const { scale, flex = 1, children } = props;
+  const { flex = 1, children } = props;
   const pad = 0;
-  const radius = INSPECTION_PANEL_RADIUS * scale;
 
   return (
     <div
       style={{
         flex,
-        backgroundColor: COLOR_PANEL_BG,
-        borderRadius: radius,
         padding: pad,
         display: "flex",
         flexDirection: "column",
@@ -519,12 +470,9 @@ function DiagramElement(props: {
   const gap = INSPECTION_PANEL_GAP * scale;
   const labelSafePad = (INSPECTION_COMPASS_FONT_SIZE + 10) * scale;
   const headerHeight = INSPECTION_TITLE_FONT_SIZE * scale * 1.05;
-  const showLegend = false;
-  const legendHeight = showLegend
-    ? 14 * scale + INSPECTION_LEGEND_FONT_SIZE * scale * 1.2
-    : 0;
+
   const panelAreaHeight = Math.max(
-    size - pad * 2 - headerHeight - 22 * scale - legendHeight,
+    size - pad * 2 - headerHeight - 22 * scale,
     0,
   );
   const panelAreaWidth = Math.max(size - pad * 2, 0);
@@ -587,11 +535,11 @@ function DiagramElement(props: {
             : panelAreaHeight;
           const labelYOffset =
             config.templateType === "row"
-              ? (i === 0 ? 20 * scale : -20 * scale)
+              ? (i === 0 ? 30 * scale : -30 * scale)
               : 0;
           const labelXOffset =
             config.templateType === "stacked"
-              ? (i === 0 ? 30 * scale : -30 * scale)
+              ? (i === 0 ? 40 * scale : -40 * scale)
               : 0;
           const isSingle = config.templateType === "single";
 
@@ -629,8 +577,6 @@ function DiagramElement(props: {
           );
         })}
       </div>
-
-      {showLegend ? <Legend scale={scale} /> : null}
     </div>
   );
 }

@@ -31,7 +31,7 @@ export const COLOR_PANEL_BG = "#F8FAFC";
 export const COLOR_BORDER = "#E5E7EB";
 export const COLOR_TEXT = "#111827";
 export const COLOR_SUBTEXT = "#6B7280";
-export const COLOR_ACCENT = "#EF4444";
+export const COLOR_ACCENT = "#FFFFFF";
 export const COLOR_EMPTY_SLOT_BG = "#F8FAFC";
 export const COLOR_EMPTY_SLOT_TEXT = "#6B7280";
 
