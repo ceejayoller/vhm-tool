@@ -4,11 +4,20 @@ import { useProjects } from "@/db/hooks";
 import { deleteProject } from "@/db/crud";
 import { ProjectCard } from "@/components/projects/ProjectCard";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, LogOut } from "lucide-react";
 import Link from "next/link";
+import { useAuthStore } from "@/state/authStore";
+import { useRouter } from "next/navigation";
 
 export default function HomePage() {
   const projects = useProjects();
+  const { user, logout } = useAuthStore();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    logout();
+    router.replace("/login");
+  };
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -20,12 +29,25 @@ export default function HomePage() {
               GeoJSON polygon screenshot automation & editing platform
             </p>
           </div>
-          <Button asChild size="lg">
-            <Link href="/project/new">
-              <Plus className="mr-2 h-5 w-5" />
-              New Project
-            </Link>
-          </Button>
+          <div className="flex items-center gap-4">
+            {user && (
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-muted-foreground">
+                  {user.first_name} {user.last_name}
+                </span>
+                <Button variant="ghost" size="sm" onClick={handleLogout}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
+              </div>
+            )}
+            <Button asChild size="lg">
+              <Link href="/project/new">
+                <Plus className="mr-2 h-5 w-5" />
+                New Project
+              </Link>
+            </Button>
+          </div>
         </div>
 
         {!projects || projects.length === 0 ? (
