@@ -26,8 +26,8 @@ import {
 } from "@/types/diagram";
 import {
   renderDiagramToBlob,
-  loadDiagramImages,
-} from "@/components/diagram/DiagramRenderer";
+  loadDiagramImageDataUrls,
+} from "@/components/diagram/SatoriDiagramRenderer";
 import { ScreenshotPickerModal } from "@/components/diagram/ScreenshotPickerModal";
 import type { TemplateOverlay, TextOverlay } from "@/types/template";
 import { TextPropertiesPanel } from "./TextPropertiesPanel";
@@ -84,12 +84,8 @@ export default function KonvaEditor({
       if (a) assetsById.set(id, a);
     }
 
-    const images = await loadDiagramImages(config, asset, assetsById);
-    const blob = await renderDiagramToBlob(config, assetId, images);
-
-    for (const [, bm] of images) {
-      bm.close();
-    }
+    const imageDataUrls = await loadDiagramImageDataUrls(config, asset, assetsById);
+    const blob = await renderDiagramToBlob(config, assetId, imageDataUrls);
 
     const url = URL.createObjectURL(blob);
     const img = new window.Image();
@@ -271,64 +267,38 @@ export default function KonvaEditor({
       const asset = await db.assets.get(assetId);
       if (!asset) return;
 
-      const assetsById = new Map<string, Asset>();
-      const ids = new Set<string>([asset.id]);
-      for (const slot of diagramConfig.slots) {
-        if (slot?.assetId) ids.add(slot.assetId);
-      }
-      for (const id of ids) {
-        const a = await db.assets.get(id);
-        if (a) assetsById.set(id, a);
-      }
-
-      const images = await loadDiagramImages(diagramConfig, asset, assetsById);
-      const baseBlob = await renderDiagramToBlob(
-        diagramConfig,
-        assetId,
-        images,
-      );
-
-      for (const [, bm] of images) {
-        bm.close();
-      }
-
       const stage = stageRef.current;
       const tr = transformerRef.current;
-      const needComposite = stage && overlays.length > 0;
-      if (needComposite) {
-        const prevNodes = tr?.nodes() ?? [];
-        tr?.nodes([]);
-        tr?.getLayer()?.batchDraw();
-        const pixelRatio = CANVAS_SIZE / stageSize.width;
-        const dataUrl = stage.toDataURL({ pixelRatio });
-        tr?.nodes(prevNodes);
-        tr?.getLayer()?.batchDraw();
-        const resp = await fetch(dataUrl);
-        const finalBlob = await resp.blob();
-        const finalBlobId = await storeBlob(finalBlob, "final", "image/png");
-        const editState = buildEditStateWithDiagram(asset.editState, diagramConfig);
-        (editState as Record<string, unknown>).overlays = overlays;
-        (editState as Record<string, unknown>).overlayCoordVersion = CANVAS_SIZE;
-        await updateAsset(assetId, {
-          finalBlobId,
-          editState,
-          status: "final",
-        });
-      } else {
-        const finalBlobId = await storeBlob(baseBlob, "final", "image/png");
-        const editState = buildEditStateWithDiagram(asset.editState, diagramConfig);
-        (editState as Record<string, unknown>).overlays = overlays;
-        (editState as Record<string, unknown>).overlayCoordVersion = CANVAS_SIZE;
-        await updateAsset(assetId, {
-          finalBlobId,
-          editState,
-          status: "final",
-        });
-      }
+      if (!stage) return;
+
+      // Hide transformer for clean export
+      const prevNodes = tr?.nodes() ?? [];
+      tr?.nodes([]);
+      tr?.getLayer()?.batchDraw();
+
+      const pixelRatio = CANVAS_SIZE / stageSize.width;
+      const dataUrl = stage.toDataURL({ pixelRatio });
+
+      tr?.nodes(prevNodes);
+      tr?.getLayer()?.batchDraw();
+
+      const resp = await fetch(dataUrl);
+      const finalBlob = await resp.blob();
+      const finalBlobId = await storeBlob(finalBlob, "final", "image/png");
+      const editState = buildEditStateWithDiagram(asset.editState, diagramConfig);
+      (editState as Record<string, unknown>).overlays = overlays;
+      (editState as Record<string, unknown>).overlayCoordVersion = CANVAS_SIZE;
+      await updateAsset(assetId, {
+        finalBlobId,
+        editState,
+        status: "final",
+      });
+
+      selectOverlay(null);
     } finally {
       setSaving(false);
     }
-  }, [assetId, diagramConfig, overlays, stageSize.width]);
+  }, [assetId, diagramConfig, overlays, stageSize.width, selectOverlay]);
 
   const handleClose = useCallback(async () => {
     if (!diagramConfig) {

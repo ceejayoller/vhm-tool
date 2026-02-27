@@ -28,6 +28,7 @@
     "react-konva": "^19.2.2",
     "react-leaflet": "^5.0.0",
     "react-window": "^2.2.7",
+    "satori": "^0.19.2",
     "tailwind-merge": "^3.4.1",
     "uuid": "^13.0.0",
     "zustand": "^5.0.11"
