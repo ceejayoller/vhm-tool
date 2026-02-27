@@ -33,9 +33,10 @@ import type { TemplateOverlay, TextOverlay } from "@/types/template";
 import { TextPropertiesPanel } from "./TextPropertiesPanel";
 import {
   CANVAS_SIZE,
+  getDiagramDimensions,
   LEGACY_CANVAS_SIZE,
 } from "@/config/diagramConfig";
-import { scaleOverlays } from "@/utils/overlays";
+import { scaleOverlays, scaleOverlaysByDimensions } from "@/utils/overlays";
 
 interface KonvaEditorProps {
   assetId: string;
@@ -50,10 +51,7 @@ export default function KonvaEditor({
   const stageRef = useRef<Konva.Stage>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
   const [baseImage, setBaseImage] = useState<HTMLImageElement | null>(null);
-  const [stageSize, setStageSize] = useState({
-    width: CANVAS_SIZE,
-    height: CANVAS_SIZE,
-  });
+  const [stageSize, setStageSize] = useState({ width: CANVAS_SIZE, height: CANVAS_SIZE });
   const [stageOffset, setStageOffset] = useState({ x: 0, y: 0 });
   const [diagramConfig, setDiagramConfig] = useState<DiagramConfig | null>(null);
   const [projectId, setProjectId] = useState<string | null>(null);
@@ -117,12 +115,21 @@ export default function KonvaEditor({
           (o): o is TemplateOverlay =>
             o && typeof o === "object" && "id" in o && "type" in o,
         ) ?? [];
+      const editStateRecord = asset.editState as Record<string, unknown> | undefined;
       const storedVersion =
-        typeof (asset.editState as Record<string, unknown> | undefined)?.overlayCoordVersion === "number"
-          ? (asset.editState as Record<string, unknown>).overlayCoordVersion as number
+        typeof editStateRecord?.overlayCoordVersion === "number"
+          ? (editStateRecord.overlayCoordVersion as number)
           : LEGACY_CANVAS_SIZE;
-      const scale = storedVersion === CANVAS_SIZE ? 1 : CANVAS_SIZE / storedVersion;
-      const scaledOverlays = scaleOverlays(initialOverlays, scale);
+      const storedWidth = typeof editStateRecord?.canvasWidth === "number" ? editStateRecord.canvasWidth : null;
+      const storedHeight = typeof editStateRecord?.canvasHeight === "number" ? editStateRecord.canvasHeight : null;
+      const targetDims = getDiagramDimensions(config.templateType);
+
+      let scaledOverlays = scaleOverlays(initialOverlays, storedVersion === LEGACY_CANVAS_SIZE ? CANVAS_SIZE / storedVersion : 1);
+      if (storedWidth != null && storedHeight != null && (storedWidth !== targetDims.width || storedHeight !== targetDims.height)) {
+        scaledOverlays = scaleOverlaysByDimensions(scaledOverlays, storedWidth, storedHeight, targetDims.width, targetDims.height);
+      } else if (storedWidth == null && (config.templateType === "row" || config.templateType === "stacked")) {
+        scaledOverlays = scaleOverlaysByDimensions(scaledOverlays, CANVAS_SIZE, CANVAS_SIZE, targetDims.width, targetDims.height);
+      }
       setSelectedAsset(assetId, scaledOverlays);
 
       await renderBaseImage(config);
@@ -135,16 +142,20 @@ export default function KonvaEditor({
     renderBaseImage(diagramConfig);
   }, [diagramConfig, renderBaseImage]);
 
+  const canvasDims = diagramConfig
+    ? getDiagramDimensions(diagramConfig.templateType)
+    : { width: CANVAS_SIZE, height: CANVAS_SIZE };
+
   useEffect(() => {
     const updateSize = () => {
       if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
         const scale = Math.min(
-          rect.width / CANVAS_SIZE,
-          rect.height / CANVAS_SIZE,
+          rect.width / canvasDims.width,
+          rect.height / canvasDims.height,
         );
-        const width = CANVAS_SIZE * scale;
-        const height = CANVAS_SIZE * scale;
+        const width = canvasDims.width * scale;
+        const height = canvasDims.height * scale;
         setStageSize({ width, height });
         setStageOffset({
           x: (rect.width - width) / 2,
@@ -156,7 +167,7 @@ export default function KonvaEditor({
     updateSize();
     window.addEventListener("resize", updateSize);
     return () => window.removeEventListener("resize", updateSize);
-  }, []);
+  }, [canvasDims.width, canvasDims.height]);
 
   useEffect(() => {
     const tr = transformerRef.current;
@@ -201,6 +212,16 @@ export default function KonvaEditor({
     (type: DiagramTemplateType) => {
       setDiagramConfig((prev) => {
         if (!prev) return prev;
+        const oldDims = getDiagramDimensions(prev.templateType);
+        const newDims = getDiagramDimensions(type);
+        const scaledOverlays = scaleOverlaysByDimensions(
+          overlays,
+          oldDims.width,
+          oldDims.height,
+          newDims.width,
+          newDims.height,
+        );
+        setSelectedAsset(assetId, scaledOverlays);
         if (type === "single") {
           return {
             templateType: "single",
@@ -220,7 +241,7 @@ export default function KonvaEditor({
         return prev;
       });
     },
-    [],
+    [assetId, overlays, setSelectedAsset],
   );
 
   const handleViewTypeChange = useCallback((slotIndex: number, viewType: DiagramViewType) => {
@@ -276,7 +297,7 @@ export default function KonvaEditor({
       tr?.nodes([]);
       tr?.getLayer()?.batchDraw();
 
-      const pixelRatio = CANVAS_SIZE / stageSize.width;
+      const pixelRatio = canvasDims.width / stageSize.width;
       const dataUrl = stage.toDataURL({ pixelRatio });
 
       tr?.nodes(prevNodes);
@@ -288,6 +309,8 @@ export default function KonvaEditor({
       const editState = buildEditStateWithDiagram(asset.editState, diagramConfig);
       (editState as Record<string, unknown>).overlays = overlays;
       (editState as Record<string, unknown>).overlayCoordVersion = CANVAS_SIZE;
+      (editState as Record<string, unknown>).canvasWidth = canvasDims.width;
+      (editState as Record<string, unknown>).canvasHeight = canvasDims.height;
       await updateAsset(assetId, {
         finalBlobId,
         editState,
@@ -298,7 +321,7 @@ export default function KonvaEditor({
     } finally {
       setSaving(false);
     }
-  }, [assetId, diagramConfig, overlays, stageSize.width, selectOverlay]);
+  }, [assetId, canvasDims.height, canvasDims.width, diagramConfig, overlays, stageSize.width, selectOverlay]);
 
   const handleClose = useCallback(async () => {
     if (!diagramConfig) {
@@ -311,14 +334,16 @@ export default function KonvaEditor({
       const editState = buildEditStateWithDiagram(asset.editState, diagramConfig);
       (editState as Record<string, unknown>).overlays = overlays;
       (editState as Record<string, unknown>).overlayCoordVersion = CANVAS_SIZE;
+      (editState as Record<string, unknown>).canvasWidth = canvasDims.width;
+      (editState as Record<string, unknown>).canvasHeight = canvasDims.height;
       await updateAsset(assetId, { editState });
     }
 
     onCloseAction();
-  }, [assetId, diagramConfig, overlays, onCloseAction]);
+  }, [assetId, canvasDims.height, canvasDims.width, diagramConfig, overlays, onCloseAction]);
 
   const scale =
-    stageSize.width > 0 ? stageSize.width / CANVAS_SIZE : 1;
+    stageSize.width > 0 ? stageSize.width / canvasDims.width : 1;
 
   const selectedTextOverlay =
     overlays.find(
@@ -369,8 +394,8 @@ export default function KonvaEditor({
             {baseImage && (
               <KImage
                 image={baseImage}
-                width={CANVAS_SIZE}
-                height={CANVAS_SIZE}
+                width={canvasDims.width}
+                height={canvasDims.height}
                 listening={false}
               />
             )}
