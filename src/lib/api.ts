@@ -3,6 +3,7 @@ import type {
   VerifyTokenResponse,
   AuthUser,
 } from "@/types/auth";
+import type { VesselWithLayouts, LayoutDetail } from "@/types/api";
 
 function getApiBaseUrl(): string {
   const url = process.env.NEXT_PUBLIC_KAIKO_API_URL ?? "";
@@ -94,6 +95,77 @@ export async function fetchCurrentUser(
 ): Promise<AuthUser> {
   return apiFetch<AuthUser>(
     "/api/v1/auth/me",
+    {
+      headers: {
+        Authorization: `Bearer ${bearerToken}`,
+      },
+    },
+    { isAuthenticated: true },
+  );
+}
+
+// ── VHM API ──
+
+const DEV_BYPASS =
+  process.env.NODE_ENV === "development" &&
+  process.env.NEXT_PUBLIC_VHM_DEV_BYPASS_AUTH === "true";
+
+const MOCK_LAYOUT_ID = "dev-layout-001";
+
+const MOCK_VESSELS: VesselWithLayouts[] = [
+  {
+    id: "dev-vessel-001",
+    name: "MV Kaiko",
+    imo_number: "0000000",
+    layouts: [{ id: MOCK_LAYOUT_ID, name: "Main Deck" }],
+  },
+];
+
+async function getMockLayoutDetail(): Promise<LayoutDetail> {
+  const res = await fetch("/test-data/test.geojson");
+  const parsed: unknown = await res.json();
+
+  // The test file may be a plain array of Features or a FeatureCollection
+  const geojson: LayoutDetail["geojson"] = Array.isArray(parsed)
+    ? { type: "FeatureCollection", features: parsed }
+    : (parsed as LayoutDetail["geojson"]);
+
+  return {
+    id: MOCK_LAYOUT_ID,
+    name: "Main Deck",
+    vessel_name: "MV Kaiko",
+    use_mercator: false,
+    ga_plan_url: "/test-data/ga-plan.png",
+    geojson,
+  };
+}
+
+/** Fetch vessels with VHM enabled and their layouts */
+export async function fetchVhmVessels(
+  bearerToken: string,
+): Promise<VesselWithLayouts[]> {
+  if (DEV_BYPASS) return MOCK_VESSELS;
+
+  return apiFetch<VesselWithLayouts[]>(
+    "/api/v1/vhm/vessels",
+    {
+      headers: {
+        Authorization: `Bearer ${bearerToken}`,
+      },
+    },
+    { isAuthenticated: true },
+  );
+}
+
+/** Fetch a single layout's details (GeoJSON + GA plan URL) */
+export async function fetchLayoutDetail(
+  bearerToken: string,
+  layoutId: string,
+): Promise<LayoutDetail> {
+  if (DEV_BYPASS) return getMockLayoutDetail();
+
+  return apiFetch<LayoutDetail>(
+    `/api/v1/vhm/layouts/${encodeURIComponent(layoutId)}`,
     {
       headers: {
         Authorization: `Bearer ${bearerToken}`,
