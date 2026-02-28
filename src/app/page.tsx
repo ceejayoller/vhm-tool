@@ -4,7 +4,7 @@ import { useProjects } from "@/db/hooks";
 import { deleteProject } from "@/db/crud";
 import { ProjectCard } from "@/components/projects/ProjectCard";
 import { Button } from "@/components/ui/button";
-import { Plus, LogOut } from "lucide-react";
+import { LogOut, Ship, Upload } from "lucide-react";
 import Link from "next/link";
 import { useAuthStore } from "@/state/authStore";
 import { useRouter } from "next/navigation";
@@ -42,9 +42,15 @@ export default function HomePage() {
               </div>
             )}
             <Button asChild size="lg">
+              <Link href="/vessels">
+                <Ship className="mr-2 h-5 w-5" />
+                Import from Kaiko
+              </Link>
+            </Button>
+            <Button asChild size="lg" variant="outline">
               <Link href="/project/new">
-                <Plus className="mr-2 h-5 w-5" />
-                New Project
+                <Upload className="mr-2 h-5 w-5" />
+                Manual Upload
               </Link>
             </Button>
           </div>
@@ -54,14 +60,22 @@ export default function HomePage() {
           <div className="text-center py-24 border-2 border-dashed rounded-lg">
             <h2 className="text-xl font-semibold mb-2">No projects yet</h2>
             <p className="text-muted-foreground mb-6">
-              Create your first project to get started
+              Import a layout from Kaiko Dashboard or upload files manually
             </p>
-            <Button asChild>
-              <Link href="/project/new">
-                <Plus className="mr-2 h-4 w-4" />
-                Create Project
-              </Link>
-            </Button>
+            <div className="flex items-center justify-center gap-3">
+              <Button asChild>
+                <Link href="/vessels">
+                  <Ship className="mr-2 h-4 w-4" />
+                  Import from Kaiko
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/project/new">
+                  <Upload className="mr-2 h-4 w-4" />
+                  Manual Upload
+                </Link>
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
