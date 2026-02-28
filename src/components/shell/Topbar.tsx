@@ -6,6 +6,7 @@ import { ArrowLeft, LogOut } from "lucide-react";
 import Link from "next/link";
 import { useAuthStore } from "@/state/authStore";
 import { useRouter } from "next/navigation";
+import { StorageStatus } from "./StorageStatus";
 
 interface TopbarProps {
   project: Project;
@@ -38,17 +39,20 @@ export function Topbar({ project }: TopbarProps) {
           )}
         </div>
       </div>
-      {user && (
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">
-            {user.first_name} {user.last_name}
-          </span>
-          <Button variant="ghost" size="sm" onClick={handleLogout}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout
-          </Button>
-        </div>
-      )}
+      <div className="flex items-center gap-3">
+        <StorageStatus compact />
+        {user && (
+          <>
+            <span className="text-sm text-muted-foreground">
+              {user.first_name} {user.last_name}
+            </span>
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
+          </>
+        )}
+      </div>
     </div>
   );
 }

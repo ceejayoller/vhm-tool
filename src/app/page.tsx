@@ -3,6 +3,7 @@
 import { useProjects } from "@/db/hooks";
 import { deleteProject } from "@/db/crud";
 import { ProjectCard } from "@/components/projects/ProjectCard";
+import { StorageStatus } from "@/components/shell/StorageStatus";
 import { Button } from "@/components/ui/button";
 import { LogOut, Ship, Upload } from "lucide-react";
 import Link from "next/link";
@@ -28,6 +29,9 @@ export default function HomePage() {
             <p className="text-muted-foreground mt-2">
               GeoJSON polygon screenshot automation & editing platform
             </p>
+            <div className="mt-2">
+              <StorageStatus />
+            </div>
           </div>
           <div className="flex items-center gap-4">
             {user && (
