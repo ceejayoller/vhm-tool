@@ -10,7 +10,10 @@ import {
   renderDiagramToBlob,
   loadDiagramImageDataUrls,
 } from "@/components/diagram/SatoriDiagramRenderer";
-import { THUMBNAIL_CANVAS_SIZE } from "@/config/diagramConfig";
+import {
+  getDiagramDimensions,
+  THUMBNAIL_CANVAS_SIZE,
+} from "@/config/diagramConfig";
 
 interface AssetCardProps {
   asset: Asset;
@@ -27,6 +30,11 @@ export function AssetCard({ asset, parentName, onEdit, onDelete }: AssetCardProp
 
     const loadThumb = async () => {
       const config = getDiagramConfig(asset, parentName);
+      const dims = getDiagramDimensions(config.templateType);
+      const scale = THUMBNAIL_CANVAS_SIZE / Math.max(dims.width, dims.height);
+      const thumbWidth = Math.round(dims.width * scale);
+      const thumbHeight = Math.round(dims.height * scale);
+
       const assetsById = new Map<string, Asset>();
       if (config.slots[1]?.assetId) {
         const a = await db.assets.get(config.slots[1].assetId);
@@ -36,7 +44,8 @@ export function AssetCard({ asset, parentName, onEdit, onDelete }: AssetCardProp
 
       const imageDataUrls = await loadDiagramImageDataUrls(config, asset, assetsById);
       const blob = await renderDiagramToBlob(config, asset.id, imageDataUrls, {
-        size: THUMBNAIL_CANVAS_SIZE,
+        width: thumbWidth,
+        height: thumbHeight,
       });
 
       url = URL.createObjectURL(blob);
@@ -91,7 +100,7 @@ export function AssetCard({ asset, parentName, onEdit, onDelete }: AssetCardProp
           alt={`Asset ${asset.childId}`}
           fill
           sizes="100vw"
-          className="object-cover"
+          className="object-contain"
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center">

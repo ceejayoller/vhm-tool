@@ -9,12 +9,13 @@ import {
   COLOR_TEXT,
   COLOR_SUBTEXT,
   COLOR_EMPTY_SLOT_TEXT,
-  INSPECTION_PANEL_GAP,
   INSPECTION_TITLE_FONT_SIZE,
   INSPECTION_TITLE_FONT_WEIGHT,
   INSPECTION_PANEL_LABEL_FONT_SIZE,
   INSPECTION_COMPASS_FONT_SIZE,
   INSPECTION_COMPASS_FONT_WEIGHT,
+  getDiagramDimensions,
+  getInspectionPanelGap,
 } from "@/config/diagramConfig";
 
 // ---------------------------------------------------------------------------
@@ -462,20 +463,21 @@ function DiagramElement(props: {
   currentAssetId: string;
   imageDataUrls: Map<string, string>;
   imageDimensions: Map<string, { width: number; height: number }>;
-  size: number;
+  width: number;
+  height: number;
 }) {
-  const { config, currentAssetId, imageDataUrls, imageDimensions, size } = props;
-  const scale = size / CANVAS_SIZE;
+  const { config, currentAssetId, imageDataUrls, imageDimensions, width, height } = props;
+  const scale = Math.min(width, height) / CANVAS_SIZE;
   const pad = 0;
-  const gap = INSPECTION_PANEL_GAP * scale;
+  const gap = getInspectionPanelGap(config.templateType) * scale;
   const labelSafePad = (INSPECTION_COMPASS_FONT_SIZE + 10) * scale;
   const headerHeight = INSPECTION_TITLE_FONT_SIZE * scale * 1.05;
 
   const panelAreaHeight = Math.max(
-    size - pad * 2 - headerHeight - 22 * scale,
+    height - pad * 2 - headerHeight - 22 * scale,
     0,
   );
-  const panelAreaWidth = Math.max(size - pad * 2, 0);
+  const panelAreaWidth = Math.max(width - pad * 2, 0);
 
   const slotCount = config.templateType === "single" ? 1 : 2;
   const slots = config.slots.slice(0, slotCount);
@@ -484,8 +486,8 @@ function DiagramElement(props: {
   return (
     <div
       style={{
-        width: size,
-        height: size,
+        width,
+        height,
         backgroundColor: COLOR_BG,
         paddingTop: 12 * scale,
         paddingBottom: 12 * scale,
@@ -619,14 +621,18 @@ async function svgToPngBlob(
 
 /**
  * Render a diagram to a PNG Blob using satori (JSX → SVG → Canvas → PNG).
+ * Dimensions default from config.templateType; override via options.
  */
 export async function renderDiagramToBlob(
   config: DiagramConfig,
   currentAssetId: string,
   imageDataUrls: Map<string, string>,
-  options?: { size?: number },
+  options?: { width?: number; height?: number },
 ): Promise<Blob> {
-  const size = options?.size ?? CANVAS_SIZE;
+  const { width, height } =
+    options?.width != null && options?.height != null
+      ? { width: options.width, height: options.height }
+      : getDiagramDimensions(config.templateType);
   const fonts = await ensureInitialized();
   const slotCount = config.templateType === "single" ? 1 : 2;
   const slots = config.slots.slice(0, slotCount);
@@ -653,14 +659,15 @@ export async function renderDiagramToBlob(
     currentAssetId,
     imageDataUrls,
     imageDimensions,
-    size,
+    width,
+    height,
   });
 
   const svg = await satori(element, {
-    width: size,
-    height: size,
+    width,
+    height,
     fonts,
   });
 
-  return svgToPngBlob(svg, size, size);
+  return svgToPngBlob(svg, width, height);
 }
